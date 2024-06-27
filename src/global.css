@@ -1,0 +1,36 @@
+.page-layout {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+.page-content {
+  width: 60%;
+  margin: 0;
+  padding: 1rem 2rem;
+}
+
+@media only screen and (max-width: 1280px) {
+  .page-content {
+    width: 80%;
+  }
+}
+
+@media only screen and (max-width: 1024px) {
+  .page-content {
+    width: 100%;
+  }
+}
+
+.flex-row-space {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
