@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
 import { getUuid } from "../utils/utils";
-import { STORE_EXPENSES } from "./shared";
+import { STORE_EXPENSES } from "./consts";
 
 namespace Expenses {
   export type Expense = {
@@ -48,8 +48,8 @@ namespace Expenses {
         console.log("Cursor error:", JSON.stringify(event));
       };
 
+      const result: Expense[] = [];
       cursorRequest.onsuccess = function (event) {
-        const result: Expense[] = [];
         // @ts-ignore
         const cursor = event?.target?.result;
         if (cursor) {
@@ -61,6 +61,7 @@ namespace Expenses {
           cursor.continue();
         } else {
           console.log("No more records found");
+          setData(result);
         }
       };
     });
