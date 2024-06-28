@@ -1,6 +1,6 @@
 import React, { SetStateAction } from "react";
 
-const dbContext = React.createContext<
+export const dbContext = React.createContext<
   | [IDBDatabase | null, React.Dispatch<SetStateAction<IDBDatabase | null>>]
   | null
 >(null);

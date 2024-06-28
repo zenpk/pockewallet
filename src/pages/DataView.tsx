@@ -2,7 +2,6 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
   Button,
   FormControl,
-  FormHelperText,
   FormLabel,
   Heading,
   Input,
@@ -12,25 +11,30 @@ import {
   MenuList,
   Select,
 } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { AddRecord } from "../components/AddRecord";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
+import { dbContext } from "../contexts/Db";
+import { openDb } from "../db/shared";
 import { ViewMode } from "../utils/consts";
-import {
-  getDate,
-  getMaxDate,
-  getMonth,
-  getYear
-} from "../utils/time";
+import { getDate, getMaxDate, getMonth, getYear } from "../utils/time";
+import { BiWallet } from "react-icons/bi";
+import { BiCalendar } from "react-icons/bi";
 
 export function DataView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
   const [title, setTitle] = useState<string>(`${getYear()}-${getMonth()}`);
-  const [openModal, setOpenModal] = useState(false);
   const [year, setYear] = useState<number>(getYear());
   const [month, setMonth] = useState<number>(getMonth());
   const [date, setDate] = useState<number>(getDate);
+  const [db, setDb] = useContext(dbContext)!;
+
+  useEffect(() => {
+    if (!db) {
+      openDb(setDb);
+    }
+  }, []);
 
   useEffect(() => {
     switch (viewMode) {
@@ -51,18 +55,73 @@ export function DataView() {
 
   return (
     <PageLayout>
-      <div id="first-lane" className="flex-row-space no-space">
-        {openModal && <AddRecord />}
-        <LeftDrawer />
-        <Heading padding={4} margin={0} fontSize={24}>
+      <div
+        id="first-lane"
+        className="flex-row-space no-space mb-sm flex-wrap flex-wrap-third"
+      >
+        <div className={"flex-row-space gap-sm no-space"}>
+          <LeftDrawer />
+          {(viewMode === ViewMode.Daily || viewMode === ViewMode.Monthly) && (
+            <AddRecord
+              submit={() => {
+                console.log("aaa");
+              }}
+              title={"Add Record"}
+            >
+              <AddRecordForm />
+            </AddRecord>
+          )}
+        </div>
+        <Heading padding={0} margin={0} fontSize={24}>
           {title}
         </Heading>
-        <div className="flex gap-1">
-          {(viewMode === ViewMode.Daily || viewMode === ViewMode.Monthly) && (
-            <Button bgColor={"green.100"}>Add</Button>
-          )}
+        <div className="flex-row-space gap-sm no-space">
           <Menu>
-            <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+            <MenuButton
+              as={Button}
+              leftIcon={<BiCalendar />}
+              rightIcon={<ChevronDownIcon />}
+            >
+              {viewMode}
+            </MenuButton>
+            <MenuList>
+              <MenuItem
+                onClick={() => {
+                  setViewMode(ViewMode.Daily);
+                }}
+              >
+                {ViewMode.Daily}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setViewMode(ViewMode.Monthly);
+                }}
+              >
+                {ViewMode.Monthly}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setViewMode(ViewMode.Yearly);
+                }}
+              >
+                {ViewMode.Yearly}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setViewMode(ViewMode.AllTime);
+                }}
+              >
+                {ViewMode.AllTime}
+              </MenuItem>
+            </MenuList>
+          </Menu>
+
+          <Menu>
+            <MenuButton
+              as={Button}
+              leftIcon={<BiWallet />}
+              rightIcon={<ChevronDownIcon />}
+            >
               {viewMode}
             </MenuButton>
             <MenuList>
@@ -98,7 +157,7 @@ export function DataView() {
           </Menu>
         </div>
       </div>
-      <div id="second-lane" className="flex-row-space no-space gap-1">
+      <div id="second-lane" className="flex-row-space no-space gap-sm">
         {viewMode !== ViewMode.AllTime && (
           <Select
             onChange={(event) => {
@@ -148,14 +207,22 @@ export function DataView() {
 }
 
 function AddRecordForm() {
-  const descriptionRef = React.useRef<HTMLInputElement>(null);
+  const [category, setCategory] = useState<string>("");
+  const amountRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
   return (
     <FormControl>
-      <FormLabel>Email</FormLabel>
+      <FormLabel>Category</FormLabel>
+      <Select
+        value={category}
+        onChange={(event) => {
+          setCategory(event.target.value);
+        }}
+      ></Select>
+      <FormLabel>Amount</FormLabel>
+      <Input type="number" ref={amountRef} />
+      <FormLabel>Description (Optional)</FormLabel>
       <Input type="text" ref={descriptionRef} />
-      <FormHelperText>
-        Enter the email you'd like to receive the newsletter on.
-      </FormHelperText>
     </FormControl>
   );
 }

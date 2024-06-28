@@ -2,12 +2,12 @@ import { ChakraProvider } from "@chakra-ui/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { DbProvider } from "./contexts/Db";
 import "./global.css";
 import "./markdown.css";
 import { DataView } from "./pages/DataView";
-import { Wallets } from "./pages/Wallets";
 import { Settings } from "./pages/Settings";
-import { DbProvider } from "./contexts/Db";
+import { Wallets } from "./pages/Wallets";
 
 const router = createBrowserRouter([
   {

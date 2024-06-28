@@ -20,7 +20,7 @@ export function openDb(setDb: Dispatch<SetStateAction<IDBDatabase | null>>) {
         db.createObjectStore(STORE_EXPENSES, { keyPath: "timestamp" });
       }
       if (!db.objectStoreNames.contains(STORE_CATEGORIES)) {
-        db.createObjectStore(STORE_CATEGORIES, { autoIncrement: true });
+        db.createObjectStore(STORE_CATEGORIES, { keyPath: "id" });
       }
       setDb(db);
     };

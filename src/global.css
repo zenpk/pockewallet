@@ -33,6 +33,10 @@
   margin: 0;
 }
 
+.mb-sm {
+  margin-bottom: 0.5rem;
+}
+
 .flex-row-space {
   display: flex;
   flex-direction: row;
@@ -44,6 +48,29 @@
   display: flex;
 }
 
-.gap-1 {
-  gap: 1rem;
+.flex-wrap {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
+.gap-sm {
+  gap: 0.5rem;
+}
+
+#pseudo-top-item {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .page-content {
+    padding: 0.5rem;
+  }
+
+  #pseudo-top-item {
+    display: block;
+  }
+
+  .flex-wrap-third > :nth-child(3) {
+    flex-basis: 100%;
+  }
 }

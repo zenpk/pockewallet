@@ -7,13 +7,14 @@ import {
   DrawerOverlay,
   useDisclosure,
 } from "@chakra-ui/react";
+import { BiMenu } from "react-icons/bi";
 
 export function LeftDrawer() {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
     <>
-      <Button bg="blue.100" onClick={onOpen}>
+      <Button bg="blue.100" onClick={onOpen} leftIcon={<BiMenu />}>
         Menu
       </Button>
       <Drawer placement={"left"} onClose={onClose} isOpen={isOpen}>

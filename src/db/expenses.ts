@@ -4,7 +4,7 @@ namespace Expenses {
   export type Expense = {
     timestamp?: number;
     amount: number;
-    category: string;
+    category: string; // uuid
     description: string;
   };
 
