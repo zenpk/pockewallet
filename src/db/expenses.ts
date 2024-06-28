@@ -1,22 +1,23 @@
+import { Dispatch, SetStateAction } from "react";
+import { getUuid } from "../utils/utils";
 import { STORE_EXPENSES } from "./shared";
 
 namespace Expenses {
   export type Expense = {
-    timestamp?: number;
+    id?: string; // uuid
     amount: number;
-    category: string; // uuid
-    description: string;
+    description?: string;
+    categoryId: string; // uuid
+    walletId: string; // uuid
+    timestamp: number;
   };
 
-  export function getByDay() {}
-
-  export function getByMonth() {}
-
   export async function write(db: IDBDatabase, data: Expense) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const transaction = db.transaction([STORE_EXPENSES], "readwrite");
       const store = transaction.objectStore(STORE_EXPENSES);
-
+      data.id = getUuid();
+      data.description = data.description || "";
       const request = store.add(data);
 
       request.onsuccess = function () {
@@ -24,24 +25,43 @@ namespace Expenses {
       };
 
       request.onerror = function (event) {
-        reject("Error writing data: " + event.target.errorCode);
+        reject("Error writing data: " + JSON.stringify(event));
       };
     });
   }
 
-  async function readData(db, id) {
+  export async function read(
+    db: IDBDatabase,
+    startTime: number,
+    endTime: number,
+    walletId: string,
+    setData: Dispatch<SetStateAction<Expense[]>>
+  ) {
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(["MyStore"], "readonly");
-      const store = transaction.objectStore("MyStore");
+      const transaction = db.transaction([STORE_EXPENSES], "readonly");
+      const store = transaction.objectStore(STORE_EXPENSES);
+      const index = store.index("timestamp");
+      const keyRange = IDBKeyRange.bound(startTime, endTime);
+      const cursorRequest = index.openCursor(keyRange);
 
-      const request = store.get(id);
-
-      request.onsuccess = function () {
-        resolve(request.result);
+      cursorRequest.onerror = function (event) {
+        console.log("Cursor error:", JSON.stringify(event));
       };
 
-      request.onerror = function (event) {
-        reject("Error reading data: " + event.target.errorCode);
+      cursorRequest.onsuccess = function (event) {
+        const result: Expense[] = [];
+        // @ts-ignore
+        const cursor = event?.target?.result;
+        if (cursor) {
+          const record = cursor.value;
+          // check wallet id
+          if (record.walletId === walletId) {
+            result.push(record);
+          }
+          cursor.continue();
+        } else {
+          console.log("No more records found");
+        }
       };
     });
   }

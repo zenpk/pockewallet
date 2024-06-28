@@ -4,6 +4,7 @@ export const DB_NAME = "MyDatabase";
 
 export const STORE_EXPENSES = "Expenses";
 export const STORE_CATEGORIES = "Categories";
+export const STORE_WALLETS = "Wallets";
 
 export function openDb(setDb: Dispatch<SetStateAction<IDBDatabase | null>>) {
   return new Promise((resolve, reject) => {
@@ -17,10 +18,14 @@ export function openDb(setDb: Dispatch<SetStateAction<IDBDatabase | null>>) {
     request.onupgradeneeded = function () {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_EXPENSES)) {
-        db.createObjectStore(STORE_EXPENSES, { keyPath: "timestamp" });
+        const store = db.createObjectStore(STORE_EXPENSES, { keyPath: "id" });
+        store.createIndex("timestamp", "timestamp", { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_CATEGORIES)) {
         db.createObjectStore(STORE_CATEGORIES, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_WALLETS)) {
+        db.createObjectStore(STORE_WALLETS, { keyPath: "id" });
       }
       setDb(db);
     };
