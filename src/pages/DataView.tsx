@@ -39,7 +39,7 @@ import { Categories } from "../db/categories";
 import { Expenses } from "../db/expenses";
 import { openDb } from "../db/shared";
 import { Wallets } from "../db/wallets";
-import { ViewMode, iconMap } from "../utils/consts";
+import { ViewMode } from "../utils/consts";
 import {
   LocalTime,
   getDate,
@@ -446,15 +446,9 @@ function DataTable({
             return (
               <Tr key={d.id}>
                 {displayDate && <Td>{d.date}</Td>}
-                <Td className="flex align-center gap-sm">
-                  {d.category && iconMap[d.category.icon]}
-                  {d.category?.name}
-                </Td>
+                <Td className="flex align-center gap-sm">{d.category?.name}</Td>
                 <Td>{d.description}</Td>
-                <Td>
-                  {displayCurrency && wallet?.currency}
-                  {d.amount}
-                </Td>
+                <Td>{d.amount}</Td>
               </Tr>
             );
           })}

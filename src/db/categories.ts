@@ -7,7 +7,6 @@ export namespace Categories {
     id: string; // uuid
     name: string;
     color: string; // #rrggbb
-    icon: string;
     deletable: boolean;
   };
 
@@ -19,7 +18,6 @@ export namespace Categories {
         id: getUuid(),
         name: "Others",
         color: "#cccccc",
-        icon: "others",
         deletable: false,
       };
       const request = store.add(defaultCategory);

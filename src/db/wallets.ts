@@ -6,7 +6,6 @@ export namespace Wallets {
   export type Wallet = {
     id: string; // uuid
     name: string;
-    currency: string; // $ ￥ €
     deletable: boolean;
   };
 
@@ -17,7 +16,6 @@ export namespace Wallets {
       const defaultWallet: Wallet = {
         id: getUuid(),
         name: "Default",
-        currency: "￥",
         deletable: false,
       };
       const request = store.add(defaultWallet);
