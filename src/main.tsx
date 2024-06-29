@@ -4,7 +4,6 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { DbProvider } from "./contexts/Db";
 import "./global.css";
-import "./markdown.css";
 import { DataView } from "./pages/DataView";
 import { Settings } from "./pages/Settings";
 import { Wallets } from "./pages/Wallets";

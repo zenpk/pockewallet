@@ -58,4 +58,20 @@ export namespace Categories {
       }
     };
   }
+
+  export function readById(
+    db: IDBDatabase,
+    id: string,
+    setData: Dispatch<SetStateAction<Category | null>>
+  ) {
+    const transaction = db.transaction([STORE_CATEGORIES], "readonly");
+    const store = transaction.objectStore(STORE_CATEGORIES);
+    const request = store.get(id);
+    request.onsuccess = function (event) {
+      setData(request.result);
+    };
+    request.onerror = function (event) {
+      throw new Error("Error reading category by id: " + JSON.stringify(event));
+    };
+  }
 }

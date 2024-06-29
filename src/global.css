@@ -53,6 +53,10 @@
   row-gap: 0.5rem;
 }
 
+.align-center {
+  align-items: center;
+}
+
 .gap-sm {
   gap: 0.5rem;
 }

@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
-import { getUuid } from "../utils/utils";
 import { STORE_WALLETS } from "../utils/consts";
+import { getUuid } from "../utils/utils";
 
 export namespace Wallets {
   export type Wallet = {
@@ -54,6 +54,22 @@ export namespace Wallets {
       } else {
         setData(result);
       }
+    };
+  }
+
+  export function readById(
+    db: IDBDatabase,
+    id: string,
+    setData: Dispatch<SetStateAction<Wallet | null>>
+  ) {
+    const transaction = db.transaction([STORE_WALLETS], "readonly");
+    const store = transaction.objectStore(STORE_WALLETS);
+    const request = store.get(id);
+    request.onsuccess = function (event) {
+      setData(request.result);
+    };
+    request.onerror = function (event) {
+      throw new Error("Error reading wallet by id: " + JSON.stringify(event));
     };
   }
 }

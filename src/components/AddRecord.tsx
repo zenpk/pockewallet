@@ -14,7 +14,7 @@ import { BiPlus } from "react-icons/bi";
 
 export type AddRecordProps = {
   title: string;
-  submit: () => void;
+  submit: () => boolean;
   children: ReactNode;
 };
 
@@ -44,8 +44,9 @@ export function AddRecord(props: AddRecordProps) {
             <Button
               colorScheme="blue"
               onClick={() => {
-                props.submit();
-                onClose();
+                if (props.submit()) {
+                  onClose();
+                }
               }}
             >
               Confirm

@@ -13,7 +13,7 @@ export function openDb() {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onsuccess = function (event) {
-      console.log(event);
+      console.log("on open db success");
       resolve(request.result);
     };
 
@@ -22,7 +22,7 @@ export function openDb() {
     };
 
     request.onupgradeneeded = function (event) {
-      console.log(`on db upgrade`);
+      console.log("on db upgrade");
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_EXPENSES)) {
         const store = db.createObjectStore(STORE_EXPENSES, { keyPath: "id" });
