@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
 import { getUuid } from "../utils/utils";
-import { STORE_EXPENSES } from "./consts";
+import { STORE_EXPENSES } from "../utils/consts";
 
 namespace Expenses {
   export type Expense = {
@@ -37,33 +37,30 @@ namespace Expenses {
     walletId: string,
     setData: Dispatch<SetStateAction<Expense[]>>
   ) {
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_EXPENSES], "readonly");
-      const store = transaction.objectStore(STORE_EXPENSES);
-      const index = store.index("timestamp");
-      const keyRange = IDBKeyRange.bound(startTime, endTime);
-      const cursorRequest = index.openCursor(keyRange);
+    const transaction = db.transaction([STORE_EXPENSES], "readonly");
+    const store = transaction.objectStore(STORE_EXPENSES);
+    const index = store.index("timestamp");
+    const keyRange = IDBKeyRange.bound(startTime, endTime);
+    const cursorRequest = index.openCursor(keyRange);
 
-      cursorRequest.onerror = function (event) {
-        console.log("Cursor error:", JSON.stringify(event));
-      };
+    cursorRequest.onerror = function (event) {
+      throw new Error("Cursor error: " + JSON.stringify(event));
+    };
 
-      const result: Expense[] = [];
-      cursorRequest.onsuccess = function (event) {
-        // @ts-ignore
-        const cursor = event?.target?.result;
-        if (cursor) {
-          const record = cursor.value;
-          // check wallet id
-          if (record.walletId === walletId) {
-            result.push(record);
-          }
-          cursor.continue();
-        } else {
-          console.log("No more records found");
-          setData(result);
+    const result: Expense[] = [];
+    cursorRequest.onsuccess = function (event) {
+      // @ts-ignore
+      const cursor = event?.target?.result;
+      if (cursor) {
+        const record = cursor.value;
+        // check wallet id
+        if (record.walletId === walletId) {
+          result.push(record);
         }
-      };
-    });
+        cursor.continue();
+      } else {
+        setData(result);
+      }
+    };
   }
 }

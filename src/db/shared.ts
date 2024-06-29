@@ -1,21 +1,28 @@
-import { Dispatch, SetStateAction } from "react";
 import {
   DB_NAME,
+  DB_VERSION,
   STORE_CATEGORIES,
   STORE_EXPENSES,
   STORE_WALLETS,
-} from "./consts";
+} from "../utils/consts";
+import { Categories } from "./categories";
+import { Wallets } from "./wallets";
 
-export function openDb(setDb: Dispatch<SetStateAction<IDBDatabase | null>>) {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+export function openDb() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onsuccess = function (event) {
       console.log(event);
-      setDb(request.result);
+      resolve(request.result);
     };
 
-    request.onupgradeneeded = function () {
+    request.onerror = function (event) {
+      reject("Database error: " + JSON.stringify(event));
+    };
+
+    request.onupgradeneeded = function (event) {
+      console.log(`on db upgrade`);
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_EXPENSES)) {
         const store = db.createObjectStore(STORE_EXPENSES, { keyPath: "id" });
@@ -27,17 +34,14 @@ export function openDb(setDb: Dispatch<SetStateAction<IDBDatabase | null>>) {
       if (!db.objectStoreNames.contains(STORE_WALLETS)) {
         db.createObjectStore(STORE_WALLETS, { keyPath: "id" });
       }
-      setDb(db);
-    };
 
-    request.onerror = function (event) {
-      reject("Database error");
-      console.log(event);
-    };
-
-    request.onsuccess = function (event) {
-      console.log(event);
-      resolve(request.result);
+      // @ts-ignore
+      const transaction = event.target.transaction;
+      transaction.oncomplete = function () {
+        Categories.writeDefault(db);
+        Wallets.writeDefault(db);
+        resolve(db);
+      };
     };
   });
 }

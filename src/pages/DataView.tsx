@@ -21,6 +21,8 @@ import { ViewMode } from "../utils/consts";
 import { getDate, getMaxDate, getMonth, getYear } from "../utils/time";
 import { BiWallet } from "react-icons/bi";
 import { BiCalendar } from "react-icons/bi";
+import { Categories } from "../db/categories";
+import { Wallets } from "../db/wallets";
 
 export function DataView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
@@ -29,12 +31,21 @@ export function DataView() {
   const [month, setMonth] = useState<number>(getMonth());
   const [date, setDate] = useState<number>(getDate);
   const [db, setDb] = useContext(dbContext)!;
+  const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
+  const [categories, setCategories] = useState<Categories.Category[]>([]);
 
   useEffect(() => {
     if (!db) {
-      openDb(setDb);
+      openDb()
+        .then((db) => {
+          setDb(db);
+        })
+        .catch((e) => console.log(e));
+    } else {
+      Wallets.read(db, setWallets);
+      Categories.read(db, setCategories);
     }
-  }, []);
+  }, [db]);
 
   useEffect(() => {
     switch (viewMode) {
@@ -122,37 +133,21 @@ export function DataView() {
               leftIcon={<BiWallet />}
               rightIcon={<ChevronDownIcon />}
             >
-              {viewMode}
+              {wallets.length ? wallets[0].name : "Wallet"}
             </MenuButton>
             <MenuList>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Daily);
-                }}
-              >
-                {ViewMode.Daily}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Monthly);
-                }}
-              >
-                {ViewMode.Monthly}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Yearly);
-                }}
-              >
-                {ViewMode.Yearly}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.AllTime);
-                }}
-              >
-                {ViewMode.AllTime}
-              </MenuItem>
+              {wallets.map((wallet) => {
+                return (
+                  <MenuItem
+                    key={wallet.id}
+                    onClick={() => {
+                      setViewMode(ViewMode.Daily);
+                    }}
+                  >
+                    {wallet.name}
+                  </MenuItem>
+                );
+              })}
             </MenuList>
           </Menu>
         </div>
