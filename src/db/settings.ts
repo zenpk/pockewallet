@@ -16,9 +16,8 @@ export namespace Settings {
   };
 
   export function read(): Settings {
-    return (
-      JSON.parse(localStorage.getItem(KEY_SETTINGS) || "{}") || defaultSettings
-    );
+    const data = localStorage.getItem(KEY_SETTINGS);
+    return data ? JSON.parse(data) : defaultSettings;
   }
 
   export function write(data: Settings) {

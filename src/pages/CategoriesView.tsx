@@ -51,7 +51,7 @@ export function CategoriesView() {
         .then((db) => {
           setDb(db);
         })
-        .catch((e) => console.log(e));
+        .catch((e) => console.error(e));
     } else {
       Categories.readAll(db, setCategories);
     }
@@ -102,12 +102,14 @@ function AddRecordForm({
   const [name, setName] = useState<string>("");
   const [nameError, setNameError] = useState<boolean>(false);
   const [color, setColor] = useState<string>("");
+  const [deletable, setDeletable] = useState<boolean>(true);
 
   useEffect(() => {
     if (db && idValue) {
       Categories.readById(db, idValue).then((result) => {
         setColor(result.color);
         setName(result.name);
+        setDeletable(result.deletable);
       });
     }
   }, [idValue]);
@@ -126,11 +128,11 @@ function AddRecordForm({
           id: idValue || getUuid(),
           name: name,
           color: color || genRandomColor(),
-          deletable: true,
+          deletable: deletable,
         })
           .then(() => setRefresh((prev) => prev + 1))
           .catch((e) => {
-            console.log(e);
+            console.error(e);
           });
         return true;
       }}

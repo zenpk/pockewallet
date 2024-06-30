@@ -78,7 +78,7 @@ export function DataView() {
         .then((db) => {
           setDb(db);
         })
-        .catch((e) => console.log(e));
+        .catch((e) => console.error(e));
     } else {
       Wallets.readAll(db, setWallets);
       Categories.readAll(db, setCategories);
@@ -265,11 +265,7 @@ export function DataView() {
               leftIcon={<BiWallet />}
               rightIcon={<ChevronDownIcon />}
             >
-              {wallets.length
-                ? wallets.find((w) => {
-                    w.id === wallet?.id;
-                  })?.name ?? wallets[0].name
-                : ""}
+              {wallet?.name ?? ""}
             </MenuButton>
             <MenuList>
               {wallets.map((wallet) => {
@@ -278,7 +274,11 @@ export function DataView() {
                     key={wallet.id}
                     onClick={() => {
                       if (db) {
-                        Wallets.readById(db, wallet.id, setWallet);
+                        Wallets.readById(db, wallet.id)
+                          .then((result) => {
+                            setWallet(result);
+                          })
+                          .catch((e) => console.error(e));
                       }
                     }}
                   >
@@ -432,7 +432,7 @@ function AddRecordForm({
         })
           .then(() => setRefresh((prev) => prev + 1))
           .catch((e) => {
-            console.log(e);
+            console.error(e);
           });
         return true;
       }}

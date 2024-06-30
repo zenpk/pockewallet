@@ -57,20 +57,20 @@ export namespace Wallets {
     };
   }
 
-  export function readById(
-    db: IDBDatabase,
-    id: string,
-    setData: Dispatch<SetStateAction<Wallet | null>>
-  ) {
-    const transaction = db.transaction([STORE_WALLETS], "readonly");
-    const store = transaction.objectStore(STORE_WALLETS);
-    const request = store.get(id);
-    request.onsuccess = function (event) {
-      setData(request.result);
-    };
-    request.onerror = function (event) {
-      throw new Error("Error reading wallet by id: " + JSON.stringify(event));
-    };
+  export function readById(db: IDBDatabase, id: string) {
+    return new Promise<Wallet>((resolve, reject) => {
+      const transaction = db.transaction([STORE_WALLETS], "readonly");
+      const store = transaction.objectStore(STORE_WALLETS);
+      const request = store.get(id);
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function (event) {
+        reject("Error reading wallet by id: " + JSON.stringify(event));
+      };
+    });
   }
 
   export function write(db: IDBDatabase, data: Wallet) {
