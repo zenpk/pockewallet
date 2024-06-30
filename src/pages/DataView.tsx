@@ -214,18 +214,20 @@ export function DataView() {
           <Button leftIcon={<BiPlus />} bgColor={"green.100"} onClick={onOpen}>
             Add
           </Button>
-          <AddRecordForm
-            db={db}
-            categories={categories}
-            wallet={wallet}
-            setRefresh={setRefresh}
-            year={year}
-            month={month}
-            day={day}
-            isOpen={isOpen}
-            onOpen={onOpen}
-            onClose={onClose}
-          />
+          {isOpen && (
+            <AddRecordForm
+              db={db}
+              categories={categories}
+              wallet={wallet}
+              setRefresh={setRefresh}
+              year={year}
+              month={month}
+              day={day}
+              isOpen={isOpen}
+              onOpen={onOpen}
+              onClose={onClose}
+            />
+          )}
         </div>
         <Heading padding={0} margin={0} fontSize={24}>
           {title}
@@ -553,19 +555,21 @@ function DataTable({
 
   return (
     <>
-      <AddRecordForm
-        db={db}
-        categories={categories}
-        wallet={wallet}
-        setRefresh={setRefresh}
-        year={0}
-        month={0}
-        day={0}
-        isOpen={isOpen}
-        onOpen={onOpen}
-        onClose={onClose}
-        idValue={currentExpenseId}
-      />
+      {isOpen && (
+        <AddRecordForm
+          db={db}
+          categories={categories}
+          wallet={wallet}
+          setRefresh={setRefresh}
+          year={0}
+          month={0}
+          day={0}
+          isOpen={isOpen}
+          onOpen={onOpen}
+          onClose={onClose}
+          idValue={currentExpenseId}
+        />
+      )}
       <TableContainer padding={0} height={"100%"}>
         <Table>
           <Thead>

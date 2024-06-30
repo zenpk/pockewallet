@@ -65,13 +65,15 @@ export function CategoriesView() {
           <Button leftIcon={<BiPlus />} bgColor={"green.100"} onClick={onOpen}>
             Add
           </Button>
-          <AddRecordForm
-            db={db}
-            setRefresh={setRefresh}
-            isOpen={isOpen}
-            onOpen={onOpen}
-            onClose={onClose}
-          />
+          {isOpen && (
+            <AddRecordForm
+              db={db}
+              setRefresh={setRefresh}
+              isOpen={isOpen}
+              onOpen={onOpen}
+              onClose={onClose}
+            />
+          )}
         </div>
         <Heading padding={0} margin={0} fontSize={24}>
           Categories
@@ -184,14 +186,16 @@ function DataTable({
 
   return (
     <>
-      <AddRecordForm
-        db={db}
-        setRefresh={setRefresh}
-        isOpen={isOpen}
-        onOpen={onOpen}
-        onClose={onClose}
-        idValue={currentCategoryId}
-      />
+      {isOpen && (
+        <AddRecordForm
+          db={db}
+          setRefresh={setRefresh}
+          isOpen={isOpen}
+          onOpen={onOpen}
+          onClose={onClose}
+          idValue={currentCategoryId}
+        />
+      )}
       <TableContainer padding={0} height={"100%"}>
         <Table>
           <Thead>
