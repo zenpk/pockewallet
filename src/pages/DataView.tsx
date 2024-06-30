@@ -69,7 +69,7 @@ export function DataView() {
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
-  const settings = Settings.read();
+  const [settings] = useState<Settings.Settings>(Settings.read());
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
@@ -527,7 +527,7 @@ function DataTable({
   setRefresh: Dispatch<SetStateAction<number>>;
 }) {
   const data = transformData(expenses);
-  const settings = Settings.read();
+  const [settings] = useState<Settings.Settings>(Settings.read());
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentExpenseId, setCurrentExpenseId] = useState<string>(
     expenses[0]?.id ?? ""
@@ -646,7 +646,7 @@ function MonthlyYearlyTable({
   wallet: Wallets.Wallet | null;
 }) {
   const data = transformData(expenses);
-  const settings = Settings.read();
+  const [settings] = useState<Settings.Settings>(Settings.read());
 
   function transformData(expenses: Expenses.Expense[]): MonthlyYearlyData[] {
     // @ts-ignore
