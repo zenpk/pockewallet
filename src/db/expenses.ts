@@ -30,7 +30,7 @@ export namespace Expenses {
     });
   }
 
-  export function read(
+  export function readAll(
     db: IDBDatabase,
     startTime: number,
     endTime: number,

@@ -5,3 +5,9 @@ export function getUuid() {
     return v.toString(16);
   });
 }
+
+export function genRandomColor() {
+  return `#${Math.floor(Math.random() * 16777215)
+    .toString(16)
+    .padStart(6, "0")}`;
+}

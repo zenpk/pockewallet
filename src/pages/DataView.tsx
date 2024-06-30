@@ -80,8 +80,8 @@ export function DataView() {
         })
         .catch((e) => console.log(e));
     } else {
-      Wallets.read(db, setWallets);
-      Categories.read(db, setCategories);
+      Wallets.readAll(db, setWallets);
+      Categories.readAll(db, setCategories);
     }
   }, [db]);
 
@@ -182,7 +182,7 @@ export function DataView() {
         };
         break;
     }
-    Expenses.read(
+    Expenses.readAll(
       db,
       localTimeToUnix(startTime),
       localTimeToUnix(endTime),
@@ -414,10 +414,6 @@ function AddRecordForm({
 
   return (
     <Dialog
-      onOpenCallback={() => {
-        setDate(localTimeToUnix(genLocalTime(year, month, day)));
-        setAmountError(false);
-      }}
       submit={() => {
         if (isNaN(amount)) {
           setAmountError(true);
@@ -427,12 +423,12 @@ function AddRecordForm({
           return false;
         }
         Expenses.write(db, {
-          id: idValue ?? getUuid(),
-          amount: amount ?? 0,
+          id: idValue || getUuid(),
+          amount: amount || 0,
           categoryId: categoryId,
           walletId: wallet.id,
           timestamp: date,
-          description: description ?? "",
+          description: description || "",
         })
           .then(() => setRefresh((prev) => prev + 1))
           .catch((e) => {

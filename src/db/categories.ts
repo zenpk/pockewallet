@@ -32,7 +32,7 @@ export namespace Categories {
     });
   }
 
-  export function read(
+  export function readAll(
     db: IDBDatabase,
     setData: Dispatch<SetStateAction<Category[]>>
   ) {
@@ -57,20 +57,20 @@ export namespace Categories {
     };
   }
 
-  export function readById(
-    db: IDBDatabase,
-    id: string,
-    setData: Dispatch<SetStateAction<Category | null>>
-  ) {
-    const transaction = db.transaction([STORE_CATEGORIES], "readonly");
-    const store = transaction.objectStore(STORE_CATEGORIES);
-    const request = store.get(id);
-    request.onsuccess = function (event) {
-      setData(request.result);
-    };
-    request.onerror = function (event) {
-      throw new Error("Error reading category by id: " + JSON.stringify(event));
-    };
+  export function readById(db: IDBDatabase, id: string) {
+    return new Promise<Category>((resolve, reject) => {
+      const transaction = db.transaction([STORE_CATEGORIES], "readonly");
+      const store = transaction.objectStore(STORE_CATEGORIES);
+      const request = store.get(id);
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function (event) {
+        reject("Error reading category by id: " + JSON.stringify(event));
+      };
+    });
   }
 
   export async function write(db: IDBDatabase, data: Category) {

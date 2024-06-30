@@ -7,11 +7,16 @@ import "./global.css";
 import { DataView } from "./pages/DataView";
 import { WalletsView } from "./pages/WalletsView";
 import { SettingsView } from "./pages/SettingsView";
+import { CategoriesView } from "./pages/CategoriesView";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <DataView />,
+  },
+  {
+    path: "/categories",
+    element: <CategoriesView />,
   },
   {
     path: "/wallets",

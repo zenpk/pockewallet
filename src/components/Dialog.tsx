@@ -14,7 +14,6 @@ export type DialogProps = {
   title: string;
   submit: () => boolean;
   children: ReactNode;
-  onOpenCallback: () => void;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;

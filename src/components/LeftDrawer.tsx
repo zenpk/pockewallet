@@ -5,9 +5,11 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  Link,
+  Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { BiMenu } from "react-icons/bi";
+import { BiCog, BiCustomize, BiDollarCircle, BiMenu, BiWallet } from "react-icons/bi";
 
 export function LeftDrawer() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -22,9 +24,46 @@ export function LeftDrawer() {
         <DrawerContent>
           <DrawerHeader borderBottomWidth="1px">Menu</DrawerHeader>
           <DrawerBody>
-            <p>Some contents...</p>
-            <p>Some contents...</p>
-            <p>Some contents...</p>
+            <Link
+              href="/"
+              display={"flex"}
+              marginBlock={"1rem"}
+              alignItems={"center"}
+              gap={"1rem"}
+            >
+              <BiDollarCircle />
+              <Text>Expenses</Text>
+            </Link>
+            <Link
+              href="/categories"
+              display={"flex"}
+              marginBlock={"1rem"}
+              alignItems={"center"}
+              gap={"1rem"}
+            >
+              <BiCustomize />
+              <Text>Categories</Text>
+            </Link>
+            <Link
+              href="/wallets"
+              display={"flex"}
+              marginBlock={"1rem"}
+              alignItems={"center"}
+              gap={"1rem"}
+            >
+              <BiWallet />
+              <Text>Wallets</Text>
+            </Link>
+            <Link
+              href="/settings"
+              display={"flex"}
+              marginBlock={"1rem"}
+              alignItems={"center"}
+              gap={"1rem"}
+            >
+              <BiCog />
+              <Text>Settings</Text>
+            </Link>
           </DrawerBody>
         </DrawerContent>
       </Drawer>

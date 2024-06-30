@@ -32,7 +32,7 @@ export namespace Wallets {
     });
   }
 
-  export function read(
+  export function readAll(
     db: IDBDatabase,
     setData: Dispatch<SetStateAction<Wallet[]>>
   ) {
