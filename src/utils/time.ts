@@ -33,19 +33,35 @@ export function getYear() {
 }
 
 export type LocalTime = {
-  date: number;
-  month: number;
   year: number;
+  month: number;
+  day: number;
 
   hour: number;
   minute: number;
   second: number;
 };
 
+export function genLocalTime(
+  year?: number,
+  month?: number,
+  day?: number
+): LocalTime {
+  const now = unixToLocalTime(getUnix());
+  return {
+    year: year || now.year,
+    month: month || now.month,
+    day: day || now.day,
+    hour: now.hour,
+    minute: now.minute,
+    second: now.second,
+  };
+}
+
 export function unixToLocalTime(timestamp: number): LocalTime {
   const date = new Date(timestamp);
   return {
-    date: date.getDate(),
+    day: date.getDate(),
     month: date.getMonth() + 1,
     year: date.getFullYear(),
     hour: date.getHours(),
@@ -58,7 +74,7 @@ export function localTimeToUnix(t: LocalTime) {
   return new Date(
     t.year,
     t.month - 1,
-    t.date,
+    t.day,
     t.hour,
     t.minute,
     t.second
@@ -66,11 +82,19 @@ export function localTimeToUnix(t: LocalTime) {
 }
 
 export function localTimeToString(t: LocalTime) {
-  return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.date
+  return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
     .toString()
     .padStart(2, "0")} ${t.hour.toString().padStart(2, "0")}:${t.minute
     .toString()
     .padStart(2, "0")}:${t.second.toString().padStart(2, "0")}`;
+}
+
+export function localTimeToInputString(t: LocalTime) {
+  return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
+    .toString()
+    .padStart(2, "0")}T${t.hour.toString().padStart(2, "0")}:${t.minute
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 export function getMaxDate(year: number, month: number) {

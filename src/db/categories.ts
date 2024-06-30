@@ -72,4 +72,36 @@ export namespace Categories {
       throw new Error("Error reading category by id: " + JSON.stringify(event));
     };
   }
+
+  export async function write(db: IDBDatabase, data: Category) {
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([STORE_CATEGORIES], "readwrite");
+      const store = transaction.objectStore(STORE_CATEGORIES);
+      const request = store.put(data);
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function (event) {
+        reject("Error writing data: " + JSON.stringify(event));
+      };
+    });
+  }
+
+  export function remove(db: IDBDatabase, id: string) {
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([STORE_CATEGORIES], "readwrite");
+      const store = transaction.objectStore(STORE_CATEGORIES);
+      const request = store.delete(id);
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function (event) {
+        reject("Error deleting category: " + JSON.stringify(event));
+      };
+    });
+  }
 }

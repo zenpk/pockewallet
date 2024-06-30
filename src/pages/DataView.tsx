@@ -1,12 +1,15 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Badge,
   Box,
   Button,
   Divider,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
   Heading,
+  IconButton,
   Input,
   Menu,
   MenuButton,
@@ -40,24 +43,27 @@ import { Expenses } from "../db/expenses";
 import { openDb } from "../db/shared";
 import { Wallets } from "../db/wallets";
 import { ViewMode } from "../utils/consts";
+import { HamburgerIcon } from "@chakra-ui/icons";
 import {
   LocalTime,
+  genLocalTime,
   getDate,
   getMaxDate,
   getMonth,
-  getUnix,
   getYear,
+  localTimeToInputString,
   localTimeToString,
   localTimeToUnix,
   unixToLocalTime,
 } from "../utils/time";
+import { getUuid } from "../utils/utils";
 
 export function DataView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
   const [title, setTitle] = useState<string>(`${getYear()}-${getMonth()}`);
   const [year, setYear] = useState<number>(getYear());
   const [month, setMonth] = useState<number>(getMonth());
-  const [date, setDate] = useState<number>(getDate);
+  const [day, setDay] = useState<number>(getDate());
   const [db, setDb] = useContext(dbContext)!;
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
@@ -97,19 +103,19 @@ export function DataView() {
     const maxDate = getMaxDate(year, month);
     switch (viewMode) {
       case ViewMode.Daily:
-        setTitle(`${year}-${month}-${date}`);
+        setTitle(`${year}-${month}-${day}`);
         startTime = {
           year: year,
           month: month,
-          date: date,
+          day: day,
           hour: 0,
           minute: 0,
           second: 0,
         };
         endTime = {
-          year: date + 1 > maxDate && month + 1 > 12 ? year + 1 : year,
-          month: date + 1 > maxDate ? (month + 1 > 12 ? 1 : month + 1) : month,
-          date: date + 1 > maxDate ? 1 : date + 1,
+          year: day + 1 > maxDate && month + 1 > 12 ? year + 1 : year,
+          month: day + 1 > maxDate ? (month + 1 > 12 ? 1 : month + 1) : month,
+          day: day + 1 > maxDate ? 1 : day + 1,
           hour: 0,
           minute: 0,
           second: 0,
@@ -121,7 +127,7 @@ export function DataView() {
         startTime = {
           year: year,
           month: month,
-          date: 1,
+          day: 1,
           hour: 0,
           minute: 0,
           second: 0,
@@ -130,7 +136,7 @@ export function DataView() {
         endTime = {
           year: month + 1 > 12 ? year + 1 : year,
           month: month + 1 > 12 ? 1 : month + 1,
-          date: 1,
+          day: 1,
           hour: 0,
           minute: 0,
           second: 0,
@@ -141,7 +147,7 @@ export function DataView() {
         startTime = {
           year: year,
           month: 1,
-          date: 1,
+          day: 1,
           hour: 0,
           minute: 0,
           second: 0,
@@ -149,7 +155,7 @@ export function DataView() {
         endTime = {
           year: year + 1,
           month: 1,
-          date: 1,
+          day: 1,
           hour: 0,
           minute: 0,
           second: 0,
@@ -160,7 +166,7 @@ export function DataView() {
         startTime = {
           year: 0,
           month: 0,
-          date: 0,
+          day: 0,
           hour: 0,
           minute: 0,
           second: 0,
@@ -168,7 +174,7 @@ export function DataView() {
         endTime = {
           year: 9999,
           month: 0,
-          date: 0,
+          day: 0,
           hour: 0,
           minute: 0,
           second: 0,
@@ -182,7 +188,7 @@ export function DataView() {
       wallet.id,
       setExpenses
     );
-  }, [refresh, viewMode, wallet, year, month, date]);
+  }, [refresh, viewMode, wallet, year, month, day]);
 
   return (
     <PageLayout>
@@ -192,14 +198,15 @@ export function DataView() {
       >
         <div className={"flex-row-space gap-sm no-space"}>
           <LeftDrawer />
-          {(viewMode === ViewMode.Daily || viewMode === ViewMode.Monthly) && (
-            <AddRecordForm
-              db={db}
-              categories={categories}
-              wallet={wallet}
-              setRefresh={setRefresh}
-            />
-          )}
+          <AddRecordForm
+            db={db}
+            categories={categories}
+            wallet={wallet}
+            setRefresh={setRefresh}
+            year={year}
+            month={month}
+            day={day}
+          />
         </div>
         <Heading padding={0} margin={0} fontSize={24}>
           {title}
@@ -308,9 +315,9 @@ export function DataView() {
         {viewMode === ViewMode.Daily && (
           <Select
             onChange={(event) => {
-              setDate(parseInt(event.target.value));
+              setDay(parseInt(event.target.value));
             }}
-            value={date}
+            value={day}
           >
             {Array.from({ length: getMaxDate(year, month) }, (_, i) => (
               <option key={i} value={i + 1}>
@@ -322,21 +329,24 @@ export function DataView() {
       </div>
       <Box margin={"0.5rem"} height={"fit-content"}>
         <Text margin={0}>
-          {`Total: ${expenses?.reduce((acc, cur) => acc + cur.amount, 0)}`}
+          {"Total: "}
+          {wallet?.currency && `${wallet.currency} `}
+          {` ${expenses?.reduce((acc, cur) => acc + cur.amount, 0)}`}
         </Text>
       </Box>
       <Divider />
       {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
         <DataTable
-          displayDate={viewMode === ViewMode.Daily}
           expenses={expenses}
           categories={categories}
+          wallet={wallet}
         />
       )}
       {(viewMode === ViewMode.Yearly || viewMode === ViewMode.AllTime) && (
         <MonthlyYearlyTable
           isMonthly={viewMode === ViewMode.Yearly}
           expenses={expenses}
+          wallet={wallet}
         />
       )}
     </PageLayout>
@@ -348,15 +358,24 @@ function AddRecordForm({
   categories,
   wallet,
   setRefresh,
+  year,
+  month,
+  day,
 }: {
   db: IDBDatabase | null;
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
   setRefresh: Dispatch<SetStateAction<number>>;
+  year: number;
+  month: number;
+  day: number;
 }) {
   const [categoryId, setCategoryId] = useState<string>("");
   const amountRef = useRef<HTMLInputElement>(null);
   const [amountError, setAmountError] = useState<boolean>(false);
+  const [date, setDate] = useState<number>(
+    localTimeToUnix(genLocalTime(year, month, day))
+  );
   const descriptionRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -367,6 +386,10 @@ function AddRecordForm({
 
   return (
     <AddRecord
+      onOpenCallback={() => {
+        setDate(localTimeToUnix(genLocalTime(year, month, day)));
+        setAmountError(false);
+      }}
       submit={() => {
         if (!amountRef.current || !amountRef.current.value) {
           setAmountError(true);
@@ -376,14 +399,15 @@ function AddRecordForm({
           setAmountError(true);
           return false;
         }
-        if (!db || !wallet) {
+        if (!db || !wallet || !date) {
           return false;
         }
         Expenses.write(db, {
+          id: getUuid(),
           amount: parseFloat(amountRef.current.value),
           categoryId: categoryId,
           walletId: wallet.id,
-          timestamp: Date.now(),
+          timestamp: date,
           description: descriptionRef.current?.value ?? "",
         })
           .then(() => setRefresh((prev) => prev + 1))
@@ -395,7 +419,17 @@ function AddRecordForm({
       title={"Add Record"}
     >
       <FormControl>
-        <FormLabel>Category</FormLabel>
+        <FormLabel>Date</FormLabel>
+        <Input
+          type="datetime-local"
+          value={localTimeToInputString(unixToLocalTime(date))}
+          onChange={(event) => {
+            setDate(new Date(event.target.value).getTime());
+          }}
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel mt={2}>Category</FormLabel>
         <Select
           value={categoryId}
           onChange={(event) => {
@@ -410,10 +444,14 @@ function AddRecordForm({
             );
           })}
         </Select>
-        <FormLabel>Amount</FormLabel>
+      </FormControl>
+      <FormControl isInvalid={amountError}>
+        <FormLabel mt={2}>Amount</FormLabel>
         <Input type="number" ref={amountRef} />
         {amountError && <FormErrorMessage>Invalid amount</FormErrorMessage>}
-        <FormLabel>Description (Optional)</FormLabel>
+      </FormControl>
+      <FormControl>
+        <FormLabel mt={2}>Description (Optional)</FormLabel>
         <Input type="text" ref={descriptionRef} />
       </FormControl>
     </AddRecord>
@@ -429,13 +467,13 @@ type DisplayData = {
 };
 
 function DataTable({
-  displayDate,
   expenses,
   categories,
+  wallet,
 }: {
-  displayDate?: boolean;
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
+  wallet: Wallets.Wallet | null;
 }) {
   const data = transformData(expenses);
 
@@ -452,7 +490,9 @@ function DataTable({
       };
     });
   }
-  displayDate = true;
+  // TODO
+  let displayDate = true;
+  let displayCurrency = true;
 
   return (
     <TableContainer paddingTop={"0.5rem"}>
@@ -463,6 +503,7 @@ function DataTable({
             <Th>Category</Th>
             <Th>Description</Th>
             <Th>Amount</Th>
+            <Th>Action</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -470,9 +511,27 @@ function DataTable({
             return (
               <Tr key={d.id}>
                 {displayDate && <Td>{d.date}</Td>}
-                <Td>{d.category?.name}</Td>
+                <Td>
+                  <Badge bgColor={d.category?.color}>{d.category?.name}</Badge>
+                </Td>
                 <Td>{d.description}</Td>
-                <Td>{d.amount}</Td>
+                <Td>
+                  {displayCurrency && wallet?.currency && `${wallet.currency} `}
+                  {d.amount}
+                </Td>
+                <Td>
+                  <Menu>
+                    <MenuButton
+                      as={IconButton}
+                      icon={<HamburgerIcon />}
+                      aria-label="Options"
+                    />
+                    <MenuList>
+                      <MenuItem>Edit</MenuItem>
+                      <MenuItem color={"#ee0000"}>Delete</MenuItem>
+                    </MenuList>
+                  </Menu>
+                </Td>
               </Tr>
             );
           })}
@@ -490,9 +549,11 @@ type MonthlyYearlyData = {
 function MonthlyYearlyTable({
   isMonthly,
   expenses,
+  wallet,
 }: {
   isMonthly?: boolean;
   expenses: Expenses.Expense[];
+  wallet: Wallets.Wallet | null;
 }) {
   const data = transformData(expenses);
 
@@ -516,6 +577,9 @@ function MonthlyYearlyTable({
       });
   }
 
+  // TODO
+  const displayCurrency = true;
+
   return (
     <TableContainer paddingTop={"0.5rem"}>
       <Table>
@@ -531,7 +595,10 @@ function MonthlyYearlyTable({
             return (
               <Tr key={d.date}>
                 <Td>{d.date}</Td>
-                <Td>{d.amount}</Td>
+                <Td>
+                  {displayCurrency && wallet?.currency && `${wallet.currency} `}
+                  {d.amount}
+                </Td>
               </Tr>
             );
           })}

@@ -4,7 +4,7 @@ import { STORE_EXPENSES } from "../utils/consts";
 
 export namespace Expenses {
   export type Expense = {
-    id?: string; // uuid
+    id: string; // uuid
     amount: number;
     description?: string;
     categoryId: string; // uuid
@@ -12,13 +12,13 @@ export namespace Expenses {
     timestamp: number;
   };
 
-  export async function write(db: IDBDatabase, data: Expense) {
+  export function write(db: IDBDatabase, data: Expense) {
     return new Promise<void>((resolve, reject) => {
       const transaction = db.transaction([STORE_EXPENSES], "readwrite");
       const store = transaction.objectStore(STORE_EXPENSES);
-      data.id = getUuid();
+      data.id = data.id || getUuid();
       data.description = data.description || "";
-      const request = store.add(data);
+      const request = store.put(data);
 
       request.onsuccess = function () {
         resolve();
@@ -30,7 +30,7 @@ export namespace Expenses {
     });
   }
 
-  export async function read(
+  export function read(
     db: IDBDatabase,
     startTime: number,
     endTime: number,
@@ -68,5 +68,21 @@ export namespace Expenses {
         setData(result);
       }
     };
+  }
+
+  export function remove(db: IDBDatabase, id: string) {
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([STORE_EXPENSES], "readwrite");
+      const store = transaction.objectStore(STORE_EXPENSES);
+      const request = store.delete(id);
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function (event) {
+        reject("Error removing expense: " + JSON.stringify(event));
+      };
+    });
   }
 }

@@ -6,6 +6,7 @@ export namespace Wallets {
   export type Wallet = {
     id: string; // uuid
     name: string;
+    currency?: string; // $ € £ ￥
     deletable: boolean;
   };
 
@@ -17,6 +18,7 @@ export namespace Wallets {
         id: getUuid(),
         name: "Default",
         deletable: false,
+        currency: "",
       };
       const request = store.add(defaultWallet);
 
@@ -69,5 +71,37 @@ export namespace Wallets {
     request.onerror = function (event) {
       throw new Error("Error reading wallet by id: " + JSON.stringify(event));
     };
+  }
+
+  export function write(db: IDBDatabase, data: Wallet) {
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([STORE_WALLETS], "readwrite");
+      const store = transaction.objectStore(STORE_WALLETS);
+      const request = store.put(data);
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function (event) {
+        reject("Error writing wallet data: " + JSON.stringify(event));
+      };
+    });
+  }
+
+  export function remove(db: IDBDatabase, id: string) {
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([STORE_WALLETS], "readwrite");
+      const store = transaction.objectStore(STORE_WALLETS);
+      const request = store.delete(id);
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function (event) {
+        reject("Error deleting wallet: " + JSON.stringify(event));
+      };
+    });
   }
 }

@@ -16,6 +16,7 @@ export type AddRecordProps = {
   title: string;
   submit: () => boolean;
   children: ReactNode;
+  onOpenCallback: () => void;
 };
 
 export function AddRecord(props: AddRecordProps) {
@@ -27,6 +28,7 @@ export function AddRecord(props: AddRecordProps) {
         bgColor={"green.100"}
         onClick={() => {
           onOpen();
+          props.onOpenCallback();
         }}
       >
         Add
