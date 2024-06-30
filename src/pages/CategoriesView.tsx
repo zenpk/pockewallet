@@ -147,9 +147,7 @@ function AddRecordForm({
           type="text"
           value={name}
           onChange={(event) => {
-            if (event?.target?.value) {
-              setName(event.target.value);
-            }
+            setName(event.target.value);
           }}
         />
         {nameError && (
@@ -162,9 +160,7 @@ function AddRecordForm({
           type="text"
           value={color}
           onChange={(event) => {
-            if (event?.target?.value) {
-              setColor(event.target.value);
-            }
+            setColor(event.target.value);
           }}
         />
       </FormControl>

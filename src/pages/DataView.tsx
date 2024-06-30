@@ -427,7 +427,7 @@ function AddRecordForm({
   return (
     <Dialog
       submit={() => {
-        if (isNaN(amount)) {
+        if (!amount || isNaN(amount)) {
           setAmountError(true);
           return false;
         }
@@ -484,11 +484,9 @@ function AddRecordForm({
         <FormLabel mt={2}>Amount</FormLabel>
         <Input
           type="number"
-          value={amount}
+          value={amount || ""}
           onChange={(event) => {
-            if (event?.target?.value) {
-              setAmount(parseFloat(event?.target?.value));
-            }
+            setAmount(parseFloat(event?.target?.value));
           }}
         />
         {amountError && <FormErrorMessage>Invalid amount</FormErrorMessage>}
@@ -499,9 +497,7 @@ function AddRecordForm({
           type="text"
           value={description}
           onChange={(event) => {
-            if (event?.target?.value) {
-              setDescription(event.target.value);
-            }
+            setDescription(event.target.value);
           }}
         />
       </FormControl>
