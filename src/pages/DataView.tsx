@@ -394,7 +394,7 @@ function AddRecordForm({
   year: number;
   month: number;
   day: number;
-  isOpen: boolean; // for refreshing the component
+  isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
   idValue?: string;
@@ -406,6 +406,10 @@ function AddRecordForm({
     localTimeToUnix(genLocalTime(year, month, day))
   );
   const [description, setDescription] = useState<string>("");
+
+  useEffect(() => {
+    setDate(localTimeToUnix(genLocalTime(year, month, day)));
+  }, [year, month, day]);
 
   useEffect(() => {
     if (db && idValue) {
