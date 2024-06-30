@@ -69,6 +69,7 @@ export function DataView() {
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
+  const settings = Settings.read();
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
@@ -90,6 +91,17 @@ export function DataView() {
       setWallet(wallets[0]);
     }
   }, [wallets]);
+
+  useEffect(() => {
+    if (settings.defaultViewMode) setViewMode(settings.defaultViewMode);
+    if (settings.defaultWallet && db) {
+      Wallets.readById(db, settings.defaultWallet)
+        .then((result) => {
+          setWallet(result);
+        })
+        .catch((e) => console.error(e));
+    }
+  }, [db, settings]);
 
   // get data
   useEffect(() => {
@@ -338,7 +350,7 @@ export function DataView() {
         <Text margin={0}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
-          {` ${expenses?.reduce((acc, cur) => acc + cur.amount, 0)}`}
+          {expenses?.reduce((acc, cur) => acc + cur.amount, 0)}
         </Text>
       </Box>
       <Divider />
