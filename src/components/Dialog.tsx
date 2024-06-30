@@ -7,47 +7,37 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { ReactNode } from "react";
-import { BiPlus } from "react-icons/bi";
 
-export type AddRecordProps = {
+export type DialogProps = {
   title: string;
   submit: () => boolean;
   children: ReactNode;
   onOpenCallback: () => void;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
 };
 
-export function AddRecord(props: AddRecordProps) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+export function Dialog(props: DialogProps) {
   return (
     <>
-      <Button
-        leftIcon={<BiPlus />}
-        bgColor={"green.100"}
-        onClick={() => {
-          onOpen();
-          props.onOpenCallback();
-        }}
-      >
-        Add
-      </Button>
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={props.isOpen} onClose={props.onClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{props.title}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>{props.children}</ModalBody>
           <ModalFooter>
-            <Button colorScheme="gray" mr={3} onClick={onClose}>
+            <Button colorScheme="gray" mr={3} onClick={props.onClose}>
               Close
             </Button>
             <Button
               colorScheme="blue"
               onClick={() => {
                 if (props.submit()) {
-                  onClose();
+                  props.onClose();
                 }
               }}
             >

@@ -85,4 +85,20 @@ export namespace Expenses {
       };
     });
   }
+
+  export function readById(db: IDBDatabase, id: string) {
+    return new Promise<Expense>((resolve, reject) => {
+      const transaction = db.transaction([STORE_EXPENSES], "readonly");
+      const store = transaction.objectStore(STORE_EXPENSES);
+      const request = store.get(id);
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function (event) {
+        reject("Error reading expense by id: " + JSON.stringify(event));
+      };
+    });
+  }
 }

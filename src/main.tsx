@@ -5,8 +5,8 @@ import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { DbProvider } from "./contexts/Db";
 import "./global.css";
 import { DataView } from "./pages/DataView";
-import { Settings } from "./pages/Settings";
-import { Wallets } from "./pages/Wallets";
+import { WalletsView } from "./pages/WalletsView";
+import { SettingsView } from "./pages/SettingsView";
 
 const router = createBrowserRouter([
   {
@@ -15,11 +15,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/wallets",
-    element: <Wallets />,
+    element: <WalletsView />,
   },
   {
     path: "/settings",
-    element: <Settings />,
+    element: <SettingsView />,
   },
 ]);
 

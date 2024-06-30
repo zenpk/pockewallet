@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, HamburgerIcon } from "@chakra-ui/icons";
 import {
   Badge,
   Box,
@@ -6,7 +6,6 @@ import {
   Divider,
   FormControl,
   FormErrorMessage,
-  FormHelperText,
   FormLabel,
   Heading,
   IconButton,
@@ -24,26 +23,26 @@ import {
   Th,
   Thead,
   Tr,
+  useDisclosure,
 } from "@chakra-ui/react";
 import {
   Dispatch,
   SetStateAction,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
-import { BiCalendar, BiWallet } from "react-icons/bi";
-import { AddRecord } from "../components/AddRecord";
+import { BiCalendar, BiPlus, BiWallet } from "react-icons/bi";
+import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
 import { dbContext } from "../contexts/Db";
 import { Categories } from "../db/categories";
 import { Expenses } from "../db/expenses";
+import { Settings } from "../db/settings";
 import { openDb } from "../db/shared";
 import { Wallets } from "../db/wallets";
 import { ViewMode } from "../utils/consts";
-import { HamburgerIcon } from "@chakra-ui/icons";
 import {
   LocalTime,
   genLocalTime,
@@ -70,6 +69,8 @@ export function DataView() {
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
+
+  const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
     if (!db) {
@@ -198,6 +199,9 @@ export function DataView() {
       >
         <div className={"flex-row-space gap-sm no-space"}>
           <LeftDrawer />
+          <Button leftIcon={<BiPlus />} bgColor={"green.100"} onClick={onOpen}>
+            Add
+          </Button>
           <AddRecordForm
             db={db}
             categories={categories}
@@ -206,6 +210,9 @@ export function DataView() {
             year={year}
             month={month}
             day={day}
+            isOpen={isOpen}
+            onOpen={onOpen}
+            onClose={onClose}
           />
         </div>
         <Heading padding={0} margin={0} fontSize={24}>
@@ -340,6 +347,8 @@ export function DataView() {
           expenses={expenses}
           categories={categories}
           wallet={wallet}
+          db={db}
+          setRefresh={setRefresh}
         />
       )}
       {(viewMode === ViewMode.Yearly || viewMode === ViewMode.AllTime) && (
@@ -361,6 +370,10 @@ function AddRecordForm({
   year,
   month,
   day,
+  isOpen,
+  onOpen,
+  onClose,
+  idValue,
 }: {
   db: IDBDatabase | null;
   categories: Categories.Category[];
@@ -369,14 +382,29 @@ function AddRecordForm({
   year: number;
   month: number;
   day: number;
+  isOpen: boolean; // for refreshing the component
+  onOpen: () => void;
+  onClose: () => void;
+  idValue?: string;
 }) {
   const [categoryId, setCategoryId] = useState<string>("");
-  const amountRef = useRef<HTMLInputElement>(null);
+  const [amount, setAmount] = useState<number>(0);
   const [amountError, setAmountError] = useState<boolean>(false);
   const [date, setDate] = useState<number>(
     localTimeToUnix(genLocalTime(year, month, day))
   );
-  const descriptionRef = useRef<HTMLInputElement>(null);
+  const [description, setDescription] = useState<string>("");
+
+  useEffect(() => {
+    if (db && idValue) {
+      Expenses.readById(db, idValue).then((result) => {
+        setCategoryId(result.categoryId);
+        setAmount(result.amount);
+        setDate(result.timestamp);
+        setDescription(result.description ?? "");
+      });
+    }
+  }, [idValue]);
 
   useEffect(() => {
     if (categories.length) {
@@ -385,17 +413,13 @@ function AddRecordForm({
   }, [categories]);
 
   return (
-    <AddRecord
+    <Dialog
       onOpenCallback={() => {
         setDate(localTimeToUnix(genLocalTime(year, month, day)));
         setAmountError(false);
       }}
       submit={() => {
-        if (!amountRef.current || !amountRef.current.value) {
-          setAmountError(true);
-          return false;
-        }
-        if (isNaN(parseFloat(amountRef.current.value))) {
+        if (isNaN(amount)) {
           setAmountError(true);
           return false;
         }
@@ -403,12 +427,12 @@ function AddRecordForm({
           return false;
         }
         Expenses.write(db, {
-          id: getUuid(),
-          amount: parseFloat(amountRef.current.value),
+          id: idValue ?? getUuid(),
+          amount: amount ?? 0,
           categoryId: categoryId,
           walletId: wallet.id,
           timestamp: date,
-          description: descriptionRef.current?.value ?? "",
+          description: description ?? "",
         })
           .then(() => setRefresh((prev) => prev + 1))
           .catch((e) => {
@@ -417,6 +441,9 @@ function AddRecordForm({
         return true;
       }}
       title={"Add Record"}
+      isOpen={isOpen}
+      onOpen={onOpen}
+      onClose={onClose}
     >
       <FormControl>
         <FormLabel>Date</FormLabel>
@@ -447,14 +474,30 @@ function AddRecordForm({
       </FormControl>
       <FormControl isInvalid={amountError}>
         <FormLabel mt={2}>Amount</FormLabel>
-        <Input type="number" ref={amountRef} />
+        <Input
+          type="number"
+          value={amount}
+          onChange={(event) => {
+            if (event?.target?.value) {
+              setAmount(parseFloat(event?.target?.value));
+            }
+          }}
+        />
         {amountError && <FormErrorMessage>Invalid amount</FormErrorMessage>}
       </FormControl>
       <FormControl>
         <FormLabel mt={2}>Description (Optional)</FormLabel>
-        <Input type="text" ref={descriptionRef} />
+        <Input
+          type="text"
+          value={description}
+          onChange={(event) => {
+            if (event?.target?.value) {
+              setDescription(event.target.value);
+            }
+          }}
+        />
       </FormControl>
-    </AddRecord>
+    </Dialog>
   );
 }
 
@@ -470,12 +513,21 @@ function DataTable({
   expenses,
   categories,
   wallet,
+  db,
+  setRefresh,
 }: {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
+  db: IDBDatabase | null;
+  setRefresh: Dispatch<SetStateAction<number>>;
 }) {
   const data = transformData(expenses);
+  const settings = Settings.read();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [currentExpenseId, setCurrentExpenseId] = useState<string>(
+    expenses[0]?.id ?? ""
+  );
 
   function transformData(expenses: Expenses.Expense[]): DisplayData[] {
     return expenses.map((expense, i) => {
@@ -490,54 +542,88 @@ function DataTable({
       };
     });
   }
-  // TODO
-  let displayDate = true;
-  let displayCurrency = true;
 
   return (
-    <TableContainer paddingTop={"0.5rem"}>
-      <Table>
-        <Thead>
-          <Tr>
-            {displayDate && <Th>Date</Th>}
-            <Th>Category</Th>
-            <Th>Description</Th>
-            <Th>Amount</Th>
-            <Th>Action</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {data.map((d) => {
-            return (
-              <Tr key={d.id}>
-                {displayDate && <Td>{d.date}</Td>}
-                <Td>
-                  <Badge bgColor={d.category?.color}>{d.category?.name}</Badge>
-                </Td>
-                <Td>{d.description}</Td>
-                <Td>
-                  {displayCurrency && wallet?.currency && `${wallet.currency} `}
-                  {d.amount}
-                </Td>
-                <Td>
-                  <Menu>
-                    <MenuButton
-                      as={IconButton}
-                      icon={<HamburgerIcon />}
-                      aria-label="Options"
-                    />
-                    <MenuList>
-                      <MenuItem>Edit</MenuItem>
-                      <MenuItem color={"#ee0000"}>Delete</MenuItem>
-                    </MenuList>
-                  </Menu>
-                </Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </TableContainer>
+    <>
+      <AddRecordForm
+        db={db}
+        categories={categories}
+        wallet={wallet}
+        setRefresh={setRefresh}
+        year={0}
+        month={0}
+        day={0}
+        isOpen={isOpen}
+        onOpen={onOpen}
+        onClose={onClose}
+        idValue={currentExpenseId}
+      />
+      <TableContainer padding={0} height={"100%"}>
+        <Table>
+          <Thead>
+            <Tr>
+              {settings.displayDate && <Th>Date</Th>}
+              <Th>Amount</Th>
+              <Th>Description</Th>
+              <Th>Category</Th>
+              <Th>Action</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {data.map((d) => {
+              return (
+                <Tr key={d.id}>
+                  {settings.displayDate && <Td>{d.date}</Td>}
+                  <Td>
+                    {settings.displayCurrency &&
+                      wallet?.currency &&
+                      `${wallet.currency} `}
+                    {d.amount}
+                  </Td>
+                  <Td>{d.description}</Td>
+                  <Td>
+                    <Badge bgColor={d.category?.color}>
+                      {d.category?.name}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <Menu>
+                      <MenuButton
+                        as={IconButton}
+                        icon={<HamburgerIcon />}
+                        aria-label="Options"
+                      />
+                      <MenuList>
+                        <MenuItem
+                          onClick={() => {
+                            setCurrentExpenseId(d.id);
+                            onOpen();
+                          }}
+                        >
+                          Edit
+                        </MenuItem>
+                        <MenuItem
+                          color={"#ee0000"}
+                          onClick={() => {
+                            if (db) {
+                              Expenses.remove(db, d.id).then(() => {
+                                setRefresh((prev) => prev + 1);
+                              });
+                            }
+                          }}
+                        >
+                          Delete
+                        </MenuItem>
+                      </MenuList>
+                    </Menu>
+                  </Td>
+                </Tr>
+              );
+            })}
+          </Tbody>
+        </Table>
+      </TableContainer>
+    </>
   );
 }
 
@@ -556,6 +642,7 @@ function MonthlyYearlyTable({
   wallet: Wallets.Wallet | null;
 }) {
   const data = transformData(expenses);
+  const settings = Settings.read();
 
   function transformData(expenses: Expenses.Expense[]): MonthlyYearlyData[] {
     // @ts-ignore
@@ -577,9 +664,6 @@ function MonthlyYearlyTable({
       });
   }
 
-  // TODO
-  const displayCurrency = true;
-
   return (
     <TableContainer paddingTop={"0.5rem"}>
       <Table>
@@ -596,7 +680,9 @@ function MonthlyYearlyTable({
               <Tr key={d.date}>
                 <Td>{d.date}</Td>
                 <Td>
-                  {displayCurrency && wallet?.currency && `${wallet.currency} `}
+                  {settings.displayCurrency &&
+                    wallet?.currency &&
+                    `${wallet.currency} `}
                   {d.amount}
                 </Td>
               </Tr>

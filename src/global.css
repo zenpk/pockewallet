@@ -78,3 +78,8 @@
     flex-basis: 100%;
   }
 }
+
+th,
+td {
+  padding-inline: 0.5rem !important;
+}
