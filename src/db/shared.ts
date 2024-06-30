@@ -26,7 +26,7 @@ export function openDb() {
 
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onsuccess = function (event) {
+    request.onsuccess = function () {
       console.log("on open db success");
       resolve(request.result);
     };
