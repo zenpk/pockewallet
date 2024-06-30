@@ -52,16 +52,6 @@ import {
   unixToLocalTime,
 } from "../utils/time";
 
-type MonthlyExpense = {
-  month: number;
-  amount: number;
-};
-
-type YearlyExpense = {
-  year: number;
-  amount: number;
-};
-
 export function DataView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
   const [title, setTitle] = useState<string>(`${getYear()}-${getMonth()}`);
@@ -73,8 +63,6 @@ export function DataView() {
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
-  const [monthlyExpenses, setMonthlyExpenses] = useState<MonthlyExpense[]>([]);
-  const [yearlyExpense, setYearlyExpenses] = useState<MonthlyExpense[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
   useEffect(() => {
@@ -96,23 +84,6 @@ export function DataView() {
     }
   }, [wallets]);
 
-  useEffect(() => {
-    switch (viewMode) {
-      case ViewMode.Daily:
-        setTitle(`${year}-${month}-${date}`);
-        break;
-      case ViewMode.Monthly:
-        setTitle(`${year}-${month}`);
-        break;
-      case ViewMode.Yearly:
-        setTitle(`${year}`);
-        break;
-      case ViewMode.AllTime:
-        setTitle("All Time");
-        break;
-    }
-  }, [viewMode, year, month, date]);
-
   // get data
   useEffect(() => {
     if (!db) {
@@ -121,13 +92,33 @@ export function DataView() {
     if (!wallet) {
       return;
     }
-    const timeNow = getUnix();
+    let startTime: LocalTime;
+    let endTime: LocalTime;
+    const maxDate = getMaxDate(year, month);
     switch (viewMode) {
       case ViewMode.Daily:
+        setTitle(`${year}-${month}-${date}`);
+        startTime = {
+          year: year,
+          month: month,
+          date: date,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        };
+        endTime = {
+          year: date + 1 > maxDate && month + 1 > 12 ? year + 1 : year,
+          month: date + 1 > maxDate ? (month + 1 > 12 ? 1 : month + 1) : month,
+          date: date + 1 > maxDate ? 1 : date + 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        };
         break;
       case ViewMode.Monthly:
+        setTitle(`${year}-${month}`);
         // the start of this month
-        const startTime: LocalTime = {
+        startTime = {
           year: year,
           month: month,
           date: 1,
@@ -136,7 +127,7 @@ export function DataView() {
           second: 0,
         };
         // the start of the next month
-        const endTime: LocalTime = {
+        endTime = {
           year: month + 1 > 12 ? year + 1 : year,
           month: month + 1 > 12 ? 1 : month + 1,
           date: 1,
@@ -144,22 +135,53 @@ export function DataView() {
           minute: 0,
           second: 0,
         };
-        Expenses.read(
-          db,
-          localTimeToUnix(startTime),
-          localTimeToUnix(endTime),
-          wallet.id,
-          setExpenses
-        );
         break;
       case ViewMode.Yearly:
-        break;
-      case ViewMode.AllTime:
-        Expenses.read(db, 0, timeNow, wallet.id, setExpenses);
+        setTitle(`${year}`);
+        startTime = {
+          year: year,
+          month: 1,
+          date: 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        };
+        endTime = {
+          year: year + 1,
+          month: 1,
+          date: 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        };
         break;
       default:
+        setTitle("All Time");
+        startTime = {
+          year: 0,
+          month: 0,
+          date: 0,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        };
+        endTime = {
+          year: 9999,
+          month: 0,
+          date: 0,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        };
         break;
     }
+    Expenses.read(
+      db,
+      localTimeToUnix(startTime),
+      localTimeToUnix(endTime),
+      wallet.id,
+      setExpenses
+    );
   }, [refresh, viewMode, wallet, year, month, date]);
 
   return (
@@ -283,7 +305,6 @@ export function DataView() {
             ))}
           </Select>
         )}
-
         {viewMode === ViewMode.Daily && (
           <Select
             onChange={(event) => {
@@ -305,12 +326,19 @@ export function DataView() {
         </Text>
       </Box>
       <Divider />
-      <DataTable
-        displayDate={viewMode === ViewMode.Daily}
-        expenses={expenses}
-        categories={categories}
-        wallet={wallet}
-      />
+      {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
+        <DataTable
+          displayDate={viewMode === ViewMode.Daily}
+          expenses={expenses}
+          categories={categories}
+        />
+      )}
+      {(viewMode === ViewMode.Yearly || viewMode === ViewMode.AllTime) && (
+        <MonthlyYearlyTable
+          isMonthly={viewMode === ViewMode.Yearly}
+          expenses={expenses}
+        />
+      )}
     </PageLayout>
   );
 }
@@ -402,16 +430,12 @@ type DisplayData = {
 
 function DataTable({
   displayDate,
-  displayCurrency,
   expenses,
   categories,
-  wallet,
 }: {
   displayDate?: boolean;
-  displayCurrency?: boolean;
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
-  wallet: Wallets.Wallet | null;
 }) {
   const data = transformData(expenses);
 
@@ -446,8 +470,67 @@ function DataTable({
             return (
               <Tr key={d.id}>
                 {displayDate && <Td>{d.date}</Td>}
-                <Td className="flex align-center gap-sm">{d.category?.name}</Td>
+                <Td>{d.category?.name}</Td>
                 <Td>{d.description}</Td>
+                <Td>{d.amount}</Td>
+              </Tr>
+            );
+          })}
+        </Tbody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+type MonthlyYearlyData = {
+  date: string;
+  amount: number;
+};
+
+function MonthlyYearlyTable({
+  isMonthly,
+  expenses,
+}: {
+  isMonthly?: boolean;
+  expenses: Expenses.Expense[];
+}) {
+  const data = transformData(expenses);
+
+  function transformData(expenses: Expenses.Expense[]): MonthlyYearlyData[] {
+    // @ts-ignore
+    const grouped = Object.groupBy(expenses, (expense) => {
+      const time = unixToLocalTime(expense.timestamp);
+      return isMonthly ? time.month : time.year;
+    });
+    return Array.from(Object.keys(grouped))
+      .sort()
+      .map((key: string) => {
+        return {
+          date: key,
+          amount: grouped[key].reduce(
+            (acc: number, cur: Pick<Expenses.Expense, "amount">) =>
+              acc + cur.amount,
+            0
+          ),
+        };
+      });
+  }
+
+  return (
+    <TableContainer paddingTop={"0.5rem"}>
+      <Table>
+        <Thead>
+          <Tr>
+            {isMonthly && <Th>Month</Th>}
+            {!isMonthly && <Th>Year</Th>}
+            <Th>Amount</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {data.map((d) => {
+            return (
+              <Tr key={d.date}>
+                <Td>{d.date}</Td>
                 <Td>{d.amount}</Td>
               </Tr>
             );
