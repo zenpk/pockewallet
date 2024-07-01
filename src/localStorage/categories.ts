@@ -29,6 +29,7 @@ export namespace Categories {
     for (const category of categories) {
       if (idSet.has(category.id)) {
         console.log("categories have corrupted data");
+        localStorage.removeItem(STORE_CATEGORIES);
         writeDefault();
         break;
       }

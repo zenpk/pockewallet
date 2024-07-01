@@ -28,6 +28,7 @@ export namespace Wallets {
     for (const wallet of wallets) {
       if (idSet.has(wallet.id)) {
         console.log("wallets have corrupted data");
+        localStorage.removeItem(STORE_WALLETS);
         writeDefault();
         break;
       }
