@@ -39,7 +39,12 @@ export namespace Expenses {
 
   export async function write(data: Expense) {
     const expenses = readAll();
-    expenses.push(data);
+    const findIndex = expenses.findIndex((expense) => expense.id === data.id);
+    if (findIndex !== -1) {
+      expenses[findIndex] = data;
+    } else {
+      expenses.push(data);
+    }
     localStorage.setItem(STORE_EXPENSES, JSON.stringify(expenses));
   }
 

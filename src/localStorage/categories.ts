@@ -40,7 +40,12 @@ export namespace Categories {
 
   export async function write(data: Category) {
     const categories = readAll();
-    categories.push(data);
+    const findIndex = categories.findIndex((category) => category.id === data.id);
+    if (findIndex !== -1) {
+      categories[findIndex] = data;
+    } else {
+      categories.push(data);
+    }
     localStorage.setItem(STORE_CATEGORIES, JSON.stringify(categories));
   }
 

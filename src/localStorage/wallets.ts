@@ -39,7 +39,12 @@ export namespace Wallets {
 
   export async function write(data: Wallet) {
     const wallets = readAll();
-    wallets.push(data);
+    const findIndex = wallets.findIndex((wallet) => wallet.id === data.id);
+    if (findIndex !== -1) {
+      wallets[findIndex] = data;
+    } else {
+      wallets.push(data);
+    }
     localStorage.setItem(STORE_WALLETS, JSON.stringify(wallets));
   }
 
