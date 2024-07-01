@@ -52,7 +52,11 @@ export function WalletsView() {
         })
         .catch((e) => console.error(e));
     } else {
-      Wallets.readAll(db, setWallets);
+      Wallets.readAll(db)
+        .then((result) => {
+          setWallets(result);
+        })
+        .catch((e) => console.error(e));
     }
   }, [db, refresh]);
 

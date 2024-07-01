@@ -81,8 +81,16 @@ export function DataView() {
         })
         .catch((e) => console.error(e));
     } else {
-      Wallets.readAll(db, setWallets);
-      Categories.readAll(db, setCategories);
+      Wallets.readAll(db)
+        .then((result) => {
+          setWallets(result);
+        })
+        .catch((e) => console.error(e));
+      Categories.readAll(db)
+        .then((result) => {
+          setCategories(result);
+        })
+        .catch((e) => console.error(e));
     }
   }, [db]);
 
@@ -198,9 +206,12 @@ export function DataView() {
       db,
       localTimeToUnix(startTime),
       localTimeToUnix(endTime),
-      wallet.id,
-      setExpenses
-    );
+      wallet.id
+    )
+      .then((result) => {
+        setExpenses(result);
+      })
+      .catch((e) => console.error(e));
   }, [refresh, viewMode, wallet, year, month, day]);
 
   return (

@@ -53,7 +53,11 @@ export function CategoriesView() {
         })
         .catch((e) => console.error(e));
     } else {
-      Categories.readAll(db, setCategories);
+      Categories.readAll(db)
+        .then((result) => {
+          setCategories(result);
+        })
+        .catch((e) => console.error(e));
     }
   }, [db, refresh]);
 

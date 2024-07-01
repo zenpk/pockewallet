@@ -1,4 +1,3 @@
-import { Dispatch, SetStateAction } from "react";
 import { STORE_CATEGORIES } from "../utils/consts";
 import { getUuid } from "../utils/utils";
 
@@ -32,29 +31,28 @@ export namespace Categories {
     });
   }
 
-  export function readAll(
-    db: IDBDatabase,
-    setData: Dispatch<SetStateAction<Category[]>>
-  ) {
-    const transaction = db.transaction([STORE_CATEGORIES], "readonly");
-    const store = transaction.objectStore(STORE_CATEGORIES);
-    const cursorRequest = store.openCursor();
+  export function readAll(db: IDBDatabase) {
+    return new Promise<Category[]>((resolve, reject) => {
+      const transaction = db.transaction([STORE_CATEGORIES], "readonly");
+      const store = transaction.objectStore(STORE_CATEGORIES);
+      const cursorRequest = store.openCursor();
 
-    cursorRequest.onerror = function (event) {
-      throw new Error("Error reading categories: " + JSON.stringify(event));
-    };
+      cursorRequest.onerror = function (event) {
+        reject("Error reading categories: " + JSON.stringify(event));
+      };
 
-    const result: Category[] = [];
-    cursorRequest.onsuccess = function (event) {
-      // @ts-ignore
-      const cursor = event?.target?.result;
-      if (cursor) {
-        result.push(cursor.value);
-        cursor.continue();
-      } else {
-        setData(result);
-      }
-    };
+      const result: Category[] = [];
+      cursorRequest.onsuccess = function (event) {
+        // @ts-ignore
+        const cursor = event?.target?.result;
+        if (cursor) {
+          result.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(result);
+        }
+      };
+    });
   }
 
   export function readById(db: IDBDatabase, id: string) {

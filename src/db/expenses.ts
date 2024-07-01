@@ -1,6 +1,5 @@
-import { Dispatch, SetStateAction } from "react";
-import { getUuid } from "../utils/utils";
 import { STORE_EXPENSES } from "../utils/consts";
+import { getUuid } from "../utils/utils";
 
 export namespace Expenses {
   export type Expense = {
@@ -34,40 +33,41 @@ export namespace Expenses {
     db: IDBDatabase,
     startTime: number,
     endTime: number,
-    walletId: string,
-    setData: Dispatch<SetStateAction<Expense[]>>
+    walletId: string
   ) {
-    const transaction = db.transaction([STORE_EXPENSES], "readonly");
-    const store = transaction.objectStore(STORE_EXPENSES);
-    const index = store.index("timestamp");
-    const keyRange = IDBKeyRange.bound(startTime, endTime);
-    const cursorRequest = index.openCursor(keyRange);
+    return new Promise<Expense[]>((resolve, reject) => {
+      const transaction = db.transaction([STORE_EXPENSES], "readonly");
+      const store = transaction.objectStore(STORE_EXPENSES);
+      const index = store.index("timestamp");
+      const keyRange = IDBKeyRange.bound(startTime, endTime);
+      const cursorRequest = index.openCursor(keyRange);
 
-    cursorRequest.onerror = function (event) {
-      throw new Error("Cursor error: " + JSON.stringify(event));
-    };
+      cursorRequest.onerror = function (event) {
+        reject("Cursor error: " + JSON.stringify(event));
+      };
 
-    const result: Expense[] = [];
-    cursorRequest.onsuccess = function (event) {
-      // @ts-ignore
-      const cursor = event?.target?.result;
-      if (cursor) {
-        const record = cursor.value;
-        // check wallet id
-        if (
-          record.walletId === walletId &&
-          record.timestamp >= startTime &&
-          record.timestamp < endTime
-        ) {
-          result.push(record);
+      const result: Expense[] = [];
+      cursorRequest.onsuccess = function (event) {
+        // @ts-ignore
+        const cursor = event?.target?.result;
+        if (cursor) {
+          const record = cursor.value;
+          // check wallet id
+          if (
+            record.walletId === walletId &&
+            record.timestamp >= startTime &&
+            record.timestamp < endTime
+          ) {
+            result.push(record);
+          }
+          cursor.continue();
+        } else {
+          // console.log("read expenses result");
+          // console.log(result);
+          resolve(result);
         }
-        cursor.continue();
-      } else {
-        // console.log("read expenses result");
-        // console.log(result);
-        setData(result);
-      }
-    };
+      };
+    });
   }
 
   export function remove(db: IDBDatabase, id: string) {

@@ -1,4 +1,3 @@
-import { Dispatch, SetStateAction } from "react";
 import { STORE_WALLETS } from "../utils/consts";
 import { getUuid } from "../utils/utils";
 
@@ -32,29 +31,28 @@ export namespace Wallets {
     });
   }
 
-  export function readAll(
-    db: IDBDatabase,
-    setData: Dispatch<SetStateAction<Wallet[]>>
-  ) {
-    const transaction = db.transaction([STORE_WALLETS], "readonly");
-    const store = transaction.objectStore(STORE_WALLETS);
-    const cursorRequest = store.openCursor();
+  export function readAll(db: IDBDatabase) {
+    return new Promise<Wallet[]>((resolve, reject) => {
+      const transaction = db.transaction([STORE_WALLETS], "readonly");
+      const store = transaction.objectStore(STORE_WALLETS);
+      const cursorRequest = store.openCursor();
 
-    cursorRequest.onerror = function (event) {
-      throw new Error("Error reading wallets: " + JSON.stringify(event));
-    };
+      cursorRequest.onerror = function (event) {
+        reject("Error reading wallets: " + JSON.stringify(event));
+      };
 
-    const result: Wallet[] = [];
-    cursorRequest.onsuccess = function (event) {
-      // @ts-ignore
-      const cursor = event?.target?.result;
-      if (cursor) {
-        result.push(cursor.value);
-        cursor.continue();
-      } else {
-        setData(result);
-      }
-    };
+      const result: Wallet[] = [];
+      cursorRequest.onsuccess = function (event) {
+        // @ts-ignore
+        const cursor = event?.target?.result;
+        if (cursor) {
+          result.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(result);
+        }
+      };
+    });
   }
 
   export function readById(db: IDBDatabase, id: string) {
