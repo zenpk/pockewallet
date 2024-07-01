@@ -23,6 +23,17 @@ export namespace Categories {
         ])
       );
     }
+    // check corrupted data
+    const categories = readAll();
+    const idSet = new Set<string>();
+    for (const category of categories) {
+      if (idSet.has(category.id)) {
+        console.log("categories have corrupted data");
+        writeDefault();
+        break;
+      }
+      idSet.add(category.id);
+    }
   }
 
   export function readAll() {
@@ -40,7 +51,9 @@ export namespace Categories {
 
   export async function write(data: Category) {
     const categories = readAll();
-    const findIndex = categories.findIndex((category) => category.id === data.id);
+    const findIndex = categories.findIndex(
+      (category) => category.id === data.id
+    );
     if (findIndex !== -1) {
       categories[findIndex] = data;
     } else {

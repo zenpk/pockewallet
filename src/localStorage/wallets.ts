@@ -22,6 +22,17 @@ export namespace Wallets {
         ])
       );
     }
+    // check corrupted data
+    const wallets = readAll();
+    const idSet = new Set<string>();
+    for (const wallet of wallets) {
+      if (idSet.has(wallet.id)) {
+        console.log("wallets have corrupted data");
+        writeDefault();
+        break;
+      }
+      idSet.add(wallet.id);
+    }
   }
 
   export function readAll() {
