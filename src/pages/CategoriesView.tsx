@@ -22,44 +22,25 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import {
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
-import { dbContext } from "../contexts/Db";
-import { Categories } from "../db/categories";
-import { openDb } from "../db/shared";
+import { Categories } from "../localStorage/categories";
+import { openDb } from "../localStorage/shared";
 import { genRandomColor, getUuid } from "../utils/utils";
 
 export function CategoriesView() {
-  const [db, setDb] = useContext(dbContext)!;
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
-    if (!db) {
-      openDb()
-        .then((db) => {
-          setDb(db);
-        })
-        .catch((e) => console.error(e));
-    } else {
-      Categories.readAll(db)
-        .then((result) => {
-          setCategories(result);
-        })
-        .catch((e) => console.error(e));
-    }
-  }, [db, refresh]);
+    openDb();
+    setCategories(Categories.readAll());
+  }, [refresh]);
 
   return (
     <PageLayout>
@@ -71,7 +52,6 @@ export function CategoriesView() {
           </Button>
           {isOpen && (
             <AddRecordForm
-              db={db}
               setRefresh={setRefresh}
               isOpen={isOpen}
               onOpen={onOpen}
@@ -85,20 +65,18 @@ export function CategoriesView() {
         <div></div>
       </div>
       <Divider />
-      <DataTable categories={categories} db={db} setRefresh={setRefresh} />
+      <DataTable categories={categories} setRefresh={setRefresh} />
     </PageLayout>
   );
 }
 
 function AddRecordForm({
-  db,
   setRefresh,
   isOpen,
   onOpen,
   onClose,
   idValue,
 }: {
-  db: IDBDatabase | null;
   setRefresh: Dispatch<SetStateAction<number>>;
   isOpen: boolean; // for refreshing the component
   onOpen: () => void;
@@ -111,12 +89,13 @@ function AddRecordForm({
   const [deletable, setDeletable] = useState<boolean>(true);
 
   useEffect(() => {
-    if (db && idValue) {
-      Categories.readById(db, idValue).then((result) => {
+    if (idValue) {
+      const result = Categories.readById(idValue);
+      if (result) {
         setColor(result.color);
         setName(result.name);
         setDeletable(result.deletable);
-      });
+      }
     }
   }, [idValue]);
 
@@ -127,19 +106,13 @@ function AddRecordForm({
           setNameError(true);
           return false;
         }
-        if (!db) {
-          return false;
-        }
-        Categories.write(db, {
+        Categories.write({
           id: idValue || getUuid(),
           name: name,
           color: color || genRandomColor(),
           deletable: deletable,
-        })
-          .then(() => setRefresh((prev) => prev + 1))
-          .catch((e) => {
-            console.error(e);
-          });
+        });
+        setRefresh((prev) => prev + 1);
         return true;
       }}
       title={"Add Record"}
@@ -176,11 +149,9 @@ function AddRecordForm({
 
 function DataTable({
   categories,
-  db,
   setRefresh,
 }: {
   categories: Categories.Category[];
-  db: IDBDatabase | null;
   setRefresh: Dispatch<SetStateAction<number>>;
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -192,7 +163,6 @@ function DataTable({
     <>
       {isOpen && (
         <AddRecordForm
-          db={db}
           setRefresh={setRefresh}
           isOpen={isOpen}
           onOpen={onOpen}
@@ -236,11 +206,8 @@ function DataTable({
                         <MenuItem
                           color={"#ee0000"}
                           onClick={() => {
-                            if (db) {
-                              Categories.remove(db, c.id).then(() => {
-                                setRefresh((prev) => prev + 1);
-                              });
-                            }
+                            Categories.remove(c.id);
+                            setRefresh((prev) => prev + 1);
                           }}
                           isDisabled={!c.deletable}
                         >

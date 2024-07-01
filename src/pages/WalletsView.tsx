@@ -21,44 +21,25 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import {
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
-import { dbContext } from "../contexts/Db";
-import { openDb } from "../db/shared";
-import { Wallets } from "../db/wallets";
+import { openDb } from "../localStorage/shared";
+import { Wallets } from "../localStorage/wallets";
 import { getUuid } from "../utils/utils";
 
 export function WalletsView() {
-  const [db, setDb] = useContext(dbContext)!;
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
-    if (!db) {
-      openDb()
-        .then((db) => {
-          setDb(db);
-        })
-        .catch((e) => console.error(e));
-    } else {
-      Wallets.readAll(db)
-        .then((result) => {
-          setWallets(result);
-        })
-        .catch((e) => console.error(e));
-    }
-  }, [db, refresh]);
+    openDb();
+    setWallets(Wallets.readAll());
+  }, [refresh]);
 
   return (
     <PageLayout>
@@ -70,7 +51,6 @@ export function WalletsView() {
           </Button>
           {isOpen && (
             <AddRecordForm
-              db={db}
               setRefresh={setRefresh}
               isOpen={isOpen}
               onOpen={onOpen}
@@ -84,20 +64,18 @@ export function WalletsView() {
         <div></div>
       </div>
       <Divider />
-      <DataTable wallets={wallets} db={db} setRefresh={setRefresh} />
+      <DataTable wallets={wallets} setRefresh={setRefresh} />
     </PageLayout>
   );
 }
 
 function AddRecordForm({
-  db,
   setRefresh,
   isOpen,
   onOpen,
   onClose,
   idValue,
 }: {
-  db: IDBDatabase | null;
   setRefresh: Dispatch<SetStateAction<number>>;
   isOpen: boolean; // for refreshing the component
   onOpen: () => void;
@@ -110,12 +88,13 @@ function AddRecordForm({
   const [deletable, setDeletable] = useState<boolean>(true);
 
   useEffect(() => {
-    if (db && idValue) {
-      Wallets.readById(db, idValue).then((result) => {
+    if (idValue) {
+      const result = Wallets.readById(idValue);
+      if (result) {
         setName(result.name);
         setCurrency(result.currency || "");
         setDeletable(result.deletable);
-      });
+      }
     }
   }, [idValue]);
 
@@ -126,19 +105,13 @@ function AddRecordForm({
           setNameError(true);
           return false;
         }
-        if (!db) {
-          return false;
-        }
-        Wallets.write(db, {
+        Wallets.write({
           id: idValue || getUuid(),
           name: name,
           currency: currency,
           deletable: deletable,
-        })
-          .then(() => setRefresh((prev) => prev + 1))
-          .catch((e) => {
-            console.error(e);
-          });
+        });
+        setRefresh((prev) => prev + 1);
         return true;
       }}
       title={"Add Record"}
@@ -175,11 +148,9 @@ function AddRecordForm({
 
 function DataTable({
   wallets,
-  db,
   setRefresh,
 }: {
   wallets: Wallets.Wallet[];
-  db: IDBDatabase | null;
   setRefresh: Dispatch<SetStateAction<number>>;
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -191,7 +162,6 @@ function DataTable({
     <>
       {isOpen && (
         <AddRecordForm
-          db={db}
           setRefresh={setRefresh}
           isOpen={isOpen}
           onOpen={onOpen}
@@ -233,11 +203,8 @@ function DataTable({
                         <MenuItem
                           color={"#ee0000"}
                           onClick={() => {
-                            if (db) {
-                              Wallets.remove(db, w.id).then(() => {
-                                setRefresh((prev) => prev + 1);
-                              });
-                            }
+                            Wallets.remove(w.id);
+                            setRefresh((prev) => prev + 1);
                           }}
                           isDisabled={!w.deletable}
                         >

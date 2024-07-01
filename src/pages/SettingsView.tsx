@@ -10,36 +10,23 @@ import {
   Select,
   Switch,
 } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
 import { Settings } from "../db/settings";
-import { useContext, useEffect, useState } from "react";
-import { Wallets } from "../db/wallets";
-import { dbContext } from "../contexts/Db";
-import { openDb } from "../db/shared";
+import { openDb } from "../localStorage/shared";
+import { Wallets } from "../localStorage/wallets";
 import { ViewMode } from "../utils/consts";
 
 export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
-  const [db, setDb] = useContext(dbContext)!;
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [saved, setSaved] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!db) {
-      openDb()
-        .then((db) => {
-          setDb(db);
-        })
-        .catch((e) => console.error(e));
-    } else {
-      Wallets.readAll(db)
-        .then((result) => {
-          setWallets(result);
-        })
-        .catch((e) => console.error(e));
-    }
-  }, [db]);
+    openDb();
+    setWallets(Wallets.readAll());
+  }, []);
 
   return (
     <PageLayout>

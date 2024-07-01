@@ -25,23 +25,16 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import {
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { BiCalendar, BiPlus, BiWallet } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
-import { dbContext } from "../contexts/Db";
-import { Categories } from "../db/categories";
-import { Expenses } from "../db/expenses";
 import { Settings } from "../db/settings";
-import { openDb } from "../db/shared";
-import { Wallets } from "../db/wallets";
+import { Categories } from "../localStorage/categories";
+import { Expenses } from "../localStorage/expenses";
+import { openDb } from "../localStorage/shared";
+import { Wallets } from "../localStorage/wallets";
 import { ViewMode } from "../utils/consts";
 import {
   LocalTime,
@@ -63,7 +56,6 @@ export function DataView() {
   const [year, setYear] = useState<number>(getYear());
   const [month, setMonth] = useState<number>(getMonth());
   const [day, setDay] = useState<number>(getDate());
-  const [db, setDb] = useContext(dbContext)!;
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
@@ -74,25 +66,10 @@ export function DataView() {
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
-    if (!db) {
-      openDb()
-        .then((db) => {
-          setDb(db);
-        })
-        .catch((e) => console.error(e));
-    } else {
-      Wallets.readAll(db)
-        .then((result) => {
-          setWallets(result);
-        })
-        .catch((e) => console.error(e));
-      Categories.readAll(db)
-        .then((result) => {
-          setCategories(result);
-        })
-        .catch((e) => console.error(e));
-    }
-  }, [db]);
+    openDb();
+    setWallets(Wallets.readAll());
+    setCategories(Categories.readAll());
+  }, []);
 
   useEffect(() => {
     if (wallets.length) {
@@ -102,20 +79,16 @@ export function DataView() {
 
   useEffect(() => {
     if (settings.defaultViewMode) setViewMode(settings.defaultViewMode);
-    if (settings.defaultWallet && db) {
-      Wallets.readById(db, settings.defaultWallet)
-        .then((result) => {
-          setWallet(result);
-        })
-        .catch((e) => console.error(e));
+    if (settings.defaultWallet) {
+      const result = Wallets.readById(settings.defaultWallet);
+      if (result) {
+        setWallet(result);
+      }
     }
-  }, [db, settings]);
+  }, [settings]);
 
   // get data
   useEffect(() => {
-    if (!db) {
-      return;
-    }
     if (!wallet) {
       return;
     }
@@ -202,16 +175,13 @@ export function DataView() {
         };
         break;
     }
-    Expenses.readAll(
-      db,
-      localTimeToUnix(startTime),
-      localTimeToUnix(endTime),
-      wallet.id
-    )
-      .then((result) => {
-        setExpenses(result);
-      })
-      .catch((e) => console.error(e));
+    setExpenses(
+      Expenses.readRange(
+        localTimeToUnix(startTime),
+        localTimeToUnix(endTime),
+        wallet.id
+      )
+    );
   }, [refresh, viewMode, wallet, year, month, day]);
 
   return (
@@ -227,7 +197,6 @@ export function DataView() {
           </Button>
           {isOpen && (
             <AddRecordForm
-              db={db}
               categories={categories}
               wallet={wallet}
               setRefresh={setRefresh}
@@ -298,12 +267,9 @@ export function DataView() {
                   <MenuItem
                     key={wallet.id}
                     onClick={() => {
-                      if (db) {
-                        Wallets.readById(db, wallet.id)
-                          .then((result) => {
-                            setWallet(result);
-                          })
-                          .catch((e) => console.error(e));
+                      const result = Wallets.readById(wallet.id);
+                      if (result) {
+                        setWallet(result);
                       }
                     }}
                   >
@@ -372,7 +338,6 @@ export function DataView() {
           expenses={expenses}
           categories={categories}
           wallet={wallet}
-          db={db}
           setRefresh={setRefresh}
         />
       )}
@@ -388,7 +353,6 @@ export function DataView() {
 }
 
 function AddRecordForm({
-  db,
   categories,
   wallet,
   setRefresh,
@@ -400,7 +364,6 @@ function AddRecordForm({
   onClose,
   idValue,
 }: {
-  db: IDBDatabase | null;
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
   setRefresh: Dispatch<SetStateAction<number>>;
@@ -425,13 +388,14 @@ function AddRecordForm({
   }, [year, month, day]);
 
   useEffect(() => {
-    if (db && idValue) {
-      Expenses.readById(db, idValue).then((result) => {
+    if (idValue) {
+      const result = Expenses.readById(idValue);
+      if (result) {
         setCategoryId(result.categoryId);
         setAmount(result.amount);
         setDate(result.timestamp);
         setDescription(result.description ?? "");
-      });
+      }
     }
   }, [idValue]);
 
@@ -448,21 +412,18 @@ function AddRecordForm({
           setAmountError(true);
           return false;
         }
-        if (!db || !wallet || !date) {
+        if (!wallet || !date) {
           return false;
         }
-        Expenses.write(db, {
+        Expenses.write({
           id: idValue || getUuid(),
           amount: amount || 0,
           categoryId: categoryId,
           walletId: wallet.id,
           timestamp: date,
           description: description || "",
-        })
-          .then(() => setRefresh((prev) => prev + 1))
-          .catch((e) => {
-            console.error(e);
-          });
+        });
+        setRefresh((prev) => prev + 1);
         return true;
       }}
       title={"Add Record"}
@@ -534,13 +495,11 @@ function DataTable({
   expenses,
   categories,
   wallet,
-  db,
   setRefresh,
 }: {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
-  db: IDBDatabase | null;
   setRefresh: Dispatch<SetStateAction<number>>;
 }) {
   const data = transformData(expenses);
@@ -568,7 +527,6 @@ function DataTable({
     <>
       {isOpen && (
         <AddRecordForm
-          db={db}
           categories={categories}
           wallet={wallet}
           setRefresh={setRefresh}
@@ -628,11 +586,8 @@ function DataTable({
                         <MenuItem
                           color={"#ee0000"}
                           onClick={() => {
-                            if (db) {
-                              Expenses.remove(db, d.id).then(() => {
-                                setRefresh((prev) => prev + 1);
-                              });
-                            }
+                            Expenses.remove(d.id);
+                            setRefresh((prev) => prev + 1);
                           }}
                         >
                           Delete
