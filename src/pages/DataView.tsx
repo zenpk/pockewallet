@@ -400,7 +400,7 @@ function AddRecordForm({
   }, [idValue]);
 
   useEffect(() => {
-    if (categories.length) {
+    if (categories.length && !categoryId) {
       setCategoryId(categories[0].id);
     }
   }, [categories]);
@@ -458,6 +458,16 @@ function AddRecordForm({
           })}
         </Select>
       </FormControl>
+      <FormControl>
+        <FormLabel mt={2}>Description (Optional)</FormLabel>
+        <Input
+          type="text"
+          value={description}
+          onChange={(event) => {
+            setDescription(event.target.value);
+          }}
+        />
+      </FormControl>
       <FormControl isInvalid={amountError}>
         <FormLabel mt={2}>Amount</FormLabel>
         <Input
@@ -468,16 +478,6 @@ function AddRecordForm({
           }}
         />
         {amountError && <FormErrorMessage>Invalid amount</FormErrorMessage>}
-      </FormControl>
-      <FormControl>
-        <FormLabel mt={2}>Description (Optional)</FormLabel>
-        <Input
-          type="text"
-          value={description}
-          onChange={(event) => {
-            setDescription(event.target.value);
-          }}
-        />
       </FormControl>
     </Dialog>
   );
@@ -544,8 +544,8 @@ function DataTable({
           <Thead>
             <Tr>
               {settings.displayDate && <Th>Date</Th>}
-              <Th>Amount</Th>
               <Th>Description</Th>
+              <Th>Amount</Th>
               <Th>Category</Th>
               <Th>Action</Th>
             </Tr>
@@ -555,13 +555,13 @@ function DataTable({
               return (
                 <Tr key={d.id}>
                   {settings.displayDate && <Td>{d.date}</Td>}
+                  <Td>{d.description}</Td>
                   <Td>
                     {settings.displayCurrency &&
                       wallet?.currency &&
                       `${wallet.currency} `}
                     {d.amount}
                   </Td>
-                  <Td>{d.description}</Td>
                   <Td>
                     <Badge bgColor={d.category?.color}>
                       {d.category?.name}
