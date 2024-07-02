@@ -1,3 +1,5 @@
+import { ViewMode } from "./consts";
+
 export function getUnix() {
   return new Date().getTime();
 }
@@ -81,7 +83,15 @@ export function localTimeToUnix(t: LocalTime) {
   ).getTime();
 }
 
-export function localTimeToString(t: LocalTime) {
+export function localTimeToString(t: LocalTime, viewMode?: ViewMode) {
+  if (viewMode === ViewMode.Monthly) {
+    return `${t.day.toString().padStart(2, "0")}`;
+  }
+  if (viewMode === ViewMode.Daily) {
+    return `${t.hour.toString().padStart(2, "0")}:${t.minute
+      .toString()
+      .padStart(2, "0")}`;
+  }
   return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
     .toString()
     .padStart(2, "0")} ${t.hour.toString().padStart(2, "0")}:${t.minute

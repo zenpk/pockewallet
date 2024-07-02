@@ -95,6 +95,8 @@ function AddRecordForm({
         setColor(result.color);
         setName(result.name);
         setDeletable(result.deletable);
+      } else {
+        console.warn("No category found with id: ", idValue);
       }
     }
   }, [idValue]);
@@ -176,7 +178,7 @@ function DataTable({
             <Tr>
               <Th>Name</Th>
               <Th>Color</Th>
-              <Th>Action</Th>
+              <Th></Th>
             </Tr>
           </Thead>
           <Tbody>

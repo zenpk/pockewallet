@@ -52,7 +52,6 @@ import { getUuid } from "../utils/utils";
 
 export function DataView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
-  const [title, setTitle] = useState<string>(`${getYear()}-${getMonth()}`);
   const [year, setYear] = useState<number>(getYear());
   const [month, setMonth] = useState<number>(getMonth());
   const [day, setDay] = useState<number>(getDate());
@@ -97,7 +96,6 @@ export function DataView() {
     const maxDate = getMaxDate(year, month);
     switch (viewMode) {
       case ViewMode.Daily:
-        setTitle(`${year}-${month}-${day}`);
         startTime = {
           year: year,
           month: month,
@@ -116,7 +114,6 @@ export function DataView() {
         };
         break;
       case ViewMode.Monthly:
-        setTitle(`${year}-${month}`);
         // the start of this month
         startTime = {
           year: year,
@@ -137,7 +134,6 @@ export function DataView() {
         };
         break;
       case ViewMode.Yearly:
-        setTitle(`${year}`);
         startTime = {
           year: year,
           month: 1,
@@ -156,7 +152,6 @@ export function DataView() {
         };
         break;
       default:
-        setTitle("All Time");
         startTime = {
           year: 0,
           month: 0,
@@ -210,7 +205,7 @@ export function DataView() {
           )}
         </div>
         <Heading padding={0} margin={0} fontSize={24}>
-          {title}
+          Expenses
         </Heading>
         <div className="flex-row-space gap-sm no-space">
           <Menu>
@@ -329,7 +324,9 @@ export function DataView() {
         <Text margin={0}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
-          {expenses?.reduce((acc, cur) => acc + cur.amount, 0)}
+          {Math.round(
+            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+          ) / 100}
         </Text>
       </Box>
       <Divider />
@@ -339,6 +336,7 @@ export function DataView() {
           categories={categories}
           wallet={wallet}
           setRefresh={setRefresh}
+          viewMode={viewMode}
         />
       )}
       {(viewMode === ViewMode.Yearly || viewMode === ViewMode.AllTime) && (
@@ -395,12 +393,14 @@ function AddRecordForm({
         setAmount(result.amount);
         setDate(result.timestamp);
         setDescription(result.description ?? "");
+      } else {
+        console.warn("No expense found with id: ", idValue);
       }
     }
   }, [idValue]);
 
   useEffect(() => {
-    if (categories.length && !categoryId) {
+    if (categories.length && !idValue) {
       setCategoryId(categories[0].id);
     }
   }, [categories]);
@@ -496,11 +496,13 @@ function DataTable({
   categories,
   wallet,
   setRefresh,
+  viewMode,
 }: {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
   setRefresh: Dispatch<SetStateAction<number>>;
+  viewMode: ViewMode;
 }) {
   const data = transformData(expenses);
   const [settings] = useState<Settings.Settings>(Settings.read());
@@ -513,7 +515,7 @@ function DataTable({
     return expenses.map((expense, i) => {
       return {
         id: expense.id ?? i.toString(),
-        date: localTimeToString(unixToLocalTime(expense.timestamp)),
+        date: localTimeToString(unixToLocalTime(expense.timestamp), viewMode),
         category:
           categories.find((category) => category.id === expense.categoryId) ??
           null,
@@ -547,7 +549,7 @@ function DataTable({
               <Th>Description</Th>
               <Th>Amount</Th>
               <Th>Category</Th>
-              <Th>Action</Th>
+              <Th></Th>
             </Tr>
           </Thead>
           <Tbody>

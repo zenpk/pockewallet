@@ -94,6 +94,8 @@ function AddRecordForm({
         setName(result.name);
         setCurrency(result.currency || "");
         setDeletable(result.deletable);
+      } else {
+        console.warn("No wallet found with id: ", idValue);
       }
     }
   }, [idValue]);
@@ -175,7 +177,7 @@ function DataTable({
             <Tr>
               <Th>Name</Th>
               <Th>Currency</Th>
-              <Th>Action</Th>
+              <Th></Th>
             </Tr>
           </Thead>
           <Tbody>
