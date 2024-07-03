@@ -1,4 +1,8 @@
-import { ChevronDownIcon, HamburgerIcon } from "@chakra-ui/icons";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  HamburgerIcon,
+} from "@chakra-ui/icons";
 import {
   Badge,
   Box,
@@ -25,7 +29,7 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { BiCalendar, BiPlus, BiWallet } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
@@ -35,7 +39,7 @@ import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import { ViewMode } from "../utils/consts";
+import { SortMode, ViewMode } from "../utils/consts";
 import {
   LocalTime,
   genLocalTime,
@@ -504,12 +508,14 @@ function DataTable({
   setRefresh: Dispatch<SetStateAction<number>>;
   viewMode: ViewMode;
 }) {
-  const data = transformData(expenses);
+  const [data, setData] = useState<DisplayData[]>([]);
   const [settings] = useState<Settings.Settings>(Settings.read());
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentExpenseId, setCurrentExpenseId] = useState<string>(
     expenses[0]?.id ?? ""
   );
+  const [sortMode, setSortMode] = useState<SortMode>(SortMode.DateDesc);
+  const dateSet = new Set();
 
   function transformData(expenses: Expenses.Expense[]): DisplayData[] {
     return expenses.map((expense, i) => {
@@ -524,6 +530,43 @@ function DataTable({
       };
     });
   }
+
+  const transformed = useMemo(() => {
+    expenses.sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1));
+    const dateDesc = transformData(expenses);
+    expenses.sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1));
+    const dateAsc = transformData(expenses);
+    expenses.sort((a, b) => (a.amount > b.amount ? -1 : 1));
+    const amountDesc = transformData(expenses);
+    expenses.sort((a, b) => (a.amount < b.amount ? -1 : 1));
+    const amountAsc = transformData(expenses);
+    return {
+      dateDesc,
+      dateAsc,
+      amountDesc,
+      amountAsc,
+    };
+  }, [expenses]);
+
+  useEffect(() => {
+    dateSet.clear();
+    switch (sortMode) {
+      case SortMode.DateDesc:
+        setData(transformed.dateDesc);
+        break;
+      case SortMode.DateAsc:
+        setData(transformed.dateAsc);
+        break;
+      case SortMode.AmountDesc:
+        setData(transformed.amountDesc);
+        break;
+      case SortMode.AmountAsc:
+        setData(transformed.amountAsc);
+        break;
+      default:
+        break;
+    }
+  }, [sortMode, transformed]);
 
   return (
     <>
@@ -545,18 +588,56 @@ function DataTable({
         <Table>
           <Thead>
             <Tr>
-              {settings.displayDate && <Th>Date</Th>}
+              {settings.displayDate && (
+                <Th
+                  onClick={() => {
+                    setSortMode(
+                      sortMode === SortMode.DateDesc
+                        ? SortMode.DateAsc
+                        : SortMode.DateDesc
+                    );
+                  }}
+                  display={"flex"}
+                  alignItems={"center"}
+                >
+                  <Text>{viewMode === ViewMode.Daily ? "Time" : "Date"}</Text>
+                  {sortMode === SortMode.DateDesc && <ChevronDownIcon />}
+                  {sortMode === SortMode.DateAsc && <ChevronUpIcon />}
+                </Th>
+              )}
               <Th>Description</Th>
-              <Th>Amount</Th>
+              <Th
+                onClick={() => {
+                  setSortMode(
+                    sortMode === SortMode.AmountDesc
+                      ? SortMode.AmountAsc
+                      : SortMode.AmountDesc
+                  );
+                }}
+                display={"flex"}
+                alignItems={"center"}
+              >
+                <Text>Amount</Text>
+                {sortMode === SortMode.AmountDesc && <ChevronDownIcon />}
+                {sortMode === SortMode.AmountAsc && <ChevronUpIcon />}
+              </Th>
               <Th>Category</Th>
               <Th></Th>
             </Tr>
           </Thead>
           <Tbody>
             {data.map((d) => {
+              const hasTheDate = dateSet.has(d.date);
+              if (
+                settings.combineDate &&
+                (sortMode === SortMode.DateAsc ||
+                  sortMode === SortMode.DateDesc)
+              ) {
+                dateSet.add(d.date);
+              }
               return (
                 <Tr key={d.id}>
-                  {settings.displayDate && <Td>{d.date}</Td>}
+                  {settings.displayDate && <Td>{!hasTheDate ? d.date : ""}</Td>}
                   <Td>{d.description}</Td>
                   <Td>
                     {settings.displayCurrency &&

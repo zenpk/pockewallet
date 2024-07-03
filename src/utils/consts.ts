@@ -13,3 +13,10 @@ export enum ViewMode {
   Yearly = "Yearly",
   AllTime = "All Time",
 }
+
+export enum SortMode {
+  DateDesc = "Date Desc",
+  DateAsc = "Date Asc",
+  AmountDesc = "Amount Desc",
+  AmountAsc = "Amount Asc",
+}

@@ -4,13 +4,15 @@ export namespace Settings {
   export type Settings = {
     displayCurrency: boolean;
     displayDate: boolean;
+    combineDate: boolean;
     defaultWallet: string;
     defaultViewMode: ViewMode;
   };
 
   const defaultSettings: Settings = {
     displayCurrency: true,
-    displayDate: false,
+    displayDate: true,
+    combineDate: true,
     defaultWallet: "",
     defaultViewMode: ViewMode.Monthly,
   };

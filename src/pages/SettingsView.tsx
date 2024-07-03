@@ -109,6 +109,23 @@ export function SettingsView() {
         justifyContent={"space-between"}
         marginBlock={2}
       >
+        <FormLabel>Combine Same Dates</FormLabel>
+        <Switch
+          isChecked={settings.combineDate}
+          onChange={(event) => {
+            setSettings((prev) => ({
+              ...prev,
+              combineDate: event.target.checked,
+            }));
+          }}
+        />
+      </FormControl>
+      <FormControl
+        display="flex"
+        alignItems="center"
+        justifyContent={"space-between"}
+        marginBlock={2}
+      >
         <FormLabel>Display Currency</FormLabel>
         <Switch
           isChecked={settings.displayCurrency}
