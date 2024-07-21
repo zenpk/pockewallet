@@ -8,25 +8,93 @@ import {
   FormLabel,
   Heading,
   Select,
+  Spinner,
   Switch,
+  Text,
 } from "@chakra-ui/react";
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
 import { Settings } from "../db/settings";
+import { oAuthSdk } from "../endpoints/oauth";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import { ViewMode } from "../utils/consts";
+import { STORE_LAST_SYNC, STORE_VERIFIER, ViewMode } from "../utils/consts";
+import { genLocalTime, localTimeToString } from "../utils/time";
+import { getIdFromCookie } from "../utils/utils";
 
 export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [saved, setSaved] = useState<boolean>(false);
+  const [login, setLogin] = useState<boolean | null>(null);
 
   useEffect(() => {
     openDb();
     setWallets(Wallets.readAll());
   }, []);
+
+  // check login
+  useEffect(() => {
+    axios
+      .get("/api/check", {
+        withCredentials: true,
+      })
+      .then((res) => {
+        console.log(res);
+        setLogin(true);
+      })
+      .catch((err) => {
+        console.log(err);
+        setLogin(false);
+      });
+  }, []);
+
+  async function goToLogin() {
+    const cv = await oAuthSdk.genChallengeVerifier(128);
+    localStorage.setItem(STORE_VERIFIER, cv.codeVerifier);
+    oAuthSdk.redirectLogin({
+      clientId: import.meta.env.VITE_CLIENT_ID as string,
+      redirect: window.location.origin,
+      codeChallenge: cv.codeChallenge,
+    });
+  }
+
+  function pushData() {
+    axios
+      .post("/api/mongo/write")
+      .then((res) => {
+        console.log(res);
+        localStorage.setItem(STORE_LAST_SYNC, new Date().toISOString());
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  function pullData() {
+    const id = getIdFromCookie();
+    if (!id) {
+      return;
+    }
+    axios
+      .get(
+        `/api/mongo/get?collection=${
+          import.meta.env.VITE_DB_COLLECTION
+        }&key=userId&value=${id.uuid}`
+      )
+      .then((res) => {
+        console.log(res);
+        localStorage.setItem(
+          STORE_LAST_SYNC,
+          localTimeToString(genLocalTime())
+        );
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
 
   return (
     <PageLayout>
@@ -152,6 +220,33 @@ export function SettingsView() {
         >
           Save
         </Button>
+      </Box>
+      <br />
+      <Box
+        marginBlock={2}
+        display={"flex"}
+        alignItems={"center"}
+        justifyContent={"flex-end"}
+      >
+        {login === null && <Spinner />}
+        {login === false && (
+          <Button colorScheme="blue" onClick={goToLogin}>
+            Login
+          </Button>
+        )}
+        {login === true && (
+          <>
+            <Text>
+              Last Sync: {localStorage.getItem(STORE_LAST_SYNC) ?? "None"}
+            </Text>
+            <Button colorScheme="blue" onClick={pushData}>
+              Push
+            </Button>
+            <Button colorScheme="red" onClick={pullData}>
+              Pull
+            </Button>
+          </>
+        )}
       </Box>
     </PageLayout>
   );
