@@ -65,4 +65,8 @@ export namespace Wallets {
     const filtered = wallets.filter((wallet) => wallet.id !== id);
     localStorage.setItem(STORE_WALLETS, JSON.stringify(filtered));
   }
+
+  export async function writeAll(wallets: Wallet[]) {
+    localStorage.setItem(STORE_WALLETS, JSON.stringify(wallets));
+  }
 }

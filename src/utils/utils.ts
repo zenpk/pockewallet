@@ -26,7 +26,7 @@ type Id = {
 };
 
 function parseId(id: string) {
-  return JSON.parse(id) as Id;
+  return JSON.parse(atob(id)) as Id;
 }
 
 export function getIdFromCookie() {

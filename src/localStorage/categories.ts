@@ -68,4 +68,8 @@ export namespace Categories {
     const filtered = categories.filter((category) => category.id !== id);
     localStorage.setItem(STORE_CATEGORIES, JSON.stringify(filtered));
   }
+
+  export async function writeAll(categories: Category[]) {
+    localStorage.setItem(STORE_CATEGORIES, JSON.stringify(categories));
+  }
 }

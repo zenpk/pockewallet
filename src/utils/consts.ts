@@ -1,3 +1,7 @@
+import { Categories } from "../localStorage/categories";
+import { Expenses } from "../localStorage/expenses";
+import { Wallets } from "../localStorage/wallets";
+
 export const DB_VERSION = 1;
 export const DB_NAME = "MyDatabase";
 
@@ -5,7 +9,6 @@ export const STORE_EXPENSES = "Expenses";
 export const STORE_CATEGORIES = "Categories";
 export const STORE_WALLETS = "Wallets";
 export const STORE_VERIFIER = "Verifier";
-export const STORE_LAST_SYNC = "LastSync";
 
 export const KEY_SETTINGS = "Settings";
 
@@ -24,3 +27,16 @@ export enum SortMode {
 }
 
 export const COOKIE_ID = "id";
+
+export type SyncData = {
+  expenses: Expenses.Expense[];
+  categories: Categories.Category[];
+  wallets: Wallets.Wallet[];
+  lastSync: string;
+  userId: string;
+};
+
+export type SendBody = {
+  collection: string;
+  data: SyncData;
+};

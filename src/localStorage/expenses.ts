@@ -53,4 +53,8 @@ export namespace Expenses {
     const filtered = expenses.filter((wallet) => wallet.id !== id);
     localStorage.setItem(STORE_EXPENSES, JSON.stringify(filtered));
   }
+
+  export async function writeAll(expenses: Expense[]) {
+    localStorage.setItem(STORE_EXPENSES, JSON.stringify(expenses));
+  }
 }

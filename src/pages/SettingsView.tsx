@@ -18,9 +18,11 @@ import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
 import { Settings } from "../db/settings";
 import { oAuthSdk } from "../endpoints/oauth";
+import { Categories } from "../localStorage/categories";
+import { Expenses } from "../localStorage/expenses";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import { STORE_LAST_SYNC, STORE_VERIFIER, ViewMode } from "../utils/consts";
+import { SendBody, STORE_VERIFIER, SyncData, ViewMode } from "../utils/consts";
 import { genLocalTime, localTimeToString } from "../utils/time";
 import { getIdFromCookie } from "../utils/utils";
 
@@ -29,6 +31,7 @@ export function SettingsView() {
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [saved, setSaved] = useState<boolean>(false);
   const [login, setLogin] = useState<boolean | null>(null);
+  const [pulledData, setPulledData] = useState<SyncData | null>(null);
 
   useEffect(() => {
     openDb();
@@ -51,6 +54,30 @@ export function SettingsView() {
       });
   }, []);
 
+  // get data
+  useEffect(() => {
+    const id = getIdFromCookie();
+    if (!id || !login) {
+      return;
+    }
+    axios
+      .get(
+        `/api/mongo/read?collection=${
+          import.meta.env.VITE_DB_COLLECTION
+        }&key=userId&value=${id.uuid}`
+      )
+      .then((res) => {
+        const data = res.data as SyncData[];
+        if (data && data.length > 0) {
+          setPulledData(data[0]);
+        }
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, [login]);
+
   async function goToLogin() {
     const cv = await oAuthSdk.genChallengeVerifier(128);
     localStorage.setItem(STORE_VERIFIER, cv.codeVerifier);
@@ -62,11 +89,27 @@ export function SettingsView() {
   }
 
   function pushData() {
+    const id = getIdFromCookie();
+    if (!id || !login) {
+      return;
+    }
+    const expenses = Expenses.readAll();
+    const categories = Categories.readAll();
+    const data: SyncData = {
+      expenses,
+      categories,
+      wallets,
+      lastSync: localTimeToString(genLocalTime()),
+      userId: getIdFromCookie()?.uuid ?? "",
+    };
+    const sendBody: SendBody = {
+      collection: import.meta.env.VITE_DB_COLLECTION as string,
+      data,
+    };
     axios
-      .post("/api/mongo/write")
+      .post(`/api/mongo/write?key=userId&value=${id.uuid}`, sendBody)
       .then((res) => {
         console.log(res);
-        localStorage.setItem(STORE_LAST_SYNC, new Date().toISOString());
       })
       .catch((err) => {
         console.log(err);
@@ -74,26 +117,7 @@ export function SettingsView() {
   }
 
   function pullData() {
-    const id = getIdFromCookie();
-    if (!id) {
-      return;
-    }
-    axios
-      .get(
-        `/api/mongo/get?collection=${
-          import.meta.env.VITE_DB_COLLECTION
-        }&key=userId&value=${id.uuid}`
-      )
-      .then((res) => {
-        console.log(res);
-        localStorage.setItem(
-          STORE_LAST_SYNC,
-          localTimeToString(genLocalTime())
-        );
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    console.log(pulledData);
   }
 
   return (
@@ -235,17 +259,15 @@ export function SettingsView() {
           </Button>
         )}
         {login === true && (
-          <>
-            <Text>
-              Last Sync: {localStorage.getItem(STORE_LAST_SYNC) ?? "None"}
-            </Text>
-            <Button colorScheme="blue" onClick={pushData}>
-              Push
-            </Button>
+          <Box display={"flex"} gap={2} alignItems={"center"}>
+            <Text>Last Sync: {pulledData?.lastSync ?? "None"}</Text>
             <Button colorScheme="red" onClick={pullData}>
               Pull
             </Button>
-          </>
+            <Button colorScheme="blue" onClick={pushData}>
+              Push
+            </Button>
+          </Box>
         )}
       </Box>
     </PageLayout>
