@@ -50,7 +50,16 @@ export function SettingsView() {
       })
       .catch((err) => {
         console.log(err);
-        setLogin(false);
+        axios
+          .post("/api/refresh", {}, { withCredentials: true })
+          .then((res) => {
+            console.log(res);
+            setLogin(true);
+          })
+          .catch((err) => {
+            console.log(err);
+            setLogin(false);
+          });
       });
   }, []);
 
