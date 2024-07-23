@@ -117,7 +117,7 @@ export function SettingsView() {
       data,
     };
     axios
-      .post(`/api/mongo/write?key=userId&value=${id.uuid}`, sendBody)
+      .post(`/api/mongo/update?key=userId&value=${id.uuid}`, sendBody)
       .then((res) => {
         console.log(res);
         getData();
