@@ -63,8 +63,7 @@ export function SettingsView() {
       });
   }, []);
 
-  // get data
-  useEffect(() => {
+  function getData() {
     const id = getIdFromCookie();
     if (!id || !login) {
       return;
@@ -85,7 +84,8 @@ export function SettingsView() {
       .catch((err) => {
         console.log(err);
       });
-  }, [login]);
+  }
+  useEffect(getData, [login]);
 
   async function goToLogin() {
     const cv = await oAuthSdk.genChallengeVerifier(128);
@@ -108,6 +108,7 @@ export function SettingsView() {
       expenses,
       categories,
       wallets,
+      settings,
       lastSync: localTimeToString(genLocalTime()),
       userId: getIdFromCookie()?.uuid ?? "",
     };
@@ -119,6 +120,7 @@ export function SettingsView() {
       .post(`/api/mongo/write?key=userId&value=${id.uuid}`, sendBody)
       .then((res) => {
         console.log(res);
+        getData();
       })
       .catch((err) => {
         console.log(err);
@@ -127,6 +129,18 @@ export function SettingsView() {
 
   function pullData() {
     console.log(pulledData);
+  }
+
+  function logout() {
+    axios
+      .get("/api/logout", { withCredentials: true })
+      .then((res) => {
+        console.log(res);
+        setLogin(false);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }
 
   return (
@@ -275,6 +289,9 @@ export function SettingsView() {
             </Button>
             <Button colorScheme="blue" onClick={pushData}>
               Push
+            </Button>
+            <Button colorScheme="blue" onClick={logout}>
+              Logout
             </Button>
           </Box>
         )}

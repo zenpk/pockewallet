@@ -1,3 +1,4 @@
+import { Settings } from "../db/settings";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { Wallets } from "../localStorage/wallets";
@@ -32,6 +33,7 @@ export type SyncData = {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallets: Wallets.Wallet[];
+  settings: Settings.Settings;
   lastSync: string;
   userId: string;
 };
