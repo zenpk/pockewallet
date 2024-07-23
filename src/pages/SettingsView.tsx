@@ -11,6 +11,7 @@ import {
   Spinner,
   Switch,
   Text,
+  useDisclosure,
 } from "@chakra-ui/react";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -25,6 +26,7 @@ import { Wallets } from "../localStorage/wallets";
 import { SendBody, STORE_VERIFIER, SyncData, ViewMode } from "../utils/consts";
 import { genLocalTime, localTimeToString } from "../utils/time";
 import { getIdFromCookie } from "../utils/utils";
+import { Dialog } from "../components/Dialog";
 
 export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
@@ -32,6 +34,7 @@ export function SettingsView() {
   const [saved, setSaved] = useState<boolean>(false);
   const [login, setLogin] = useState<boolean | null>(null);
   const [pulledData, setPulledData] = useState<SyncData | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     openDb();
@@ -98,6 +101,14 @@ export function SettingsView() {
   }
 
   function pushData() {
+    updateData();
+  }
+
+  async function backupData() {
+    await updateData(true);
+  }
+
+  function updateData(isBackup = false) {
     const id = getIdFromCookie();
     if (!id || !login) {
       return;
@@ -111,14 +122,17 @@ export function SettingsView() {
       wallets,
       settings,
       lastSync: localTimeToString(genLocalTime()),
-      userId: getIdFromCookie()?.uuid ?? "",
+      userId: id.uuid,
     };
+    if (isBackup) {
+      data.userId += "-backup";
+    }
     const sendBody: SendBody = {
       collection: import.meta.env.VITE_DB_COLLECTION as string,
       data,
     };
-    axios
-      .post(`/api/mongo/update?key=userId&value=${id.uuid}`, sendBody)
+    return axios
+      .post(`/api/mongo/update?key=userId&value=${data.userId}`, sendBody)
       .then((res) => {
         console.log(res);
         getData();
@@ -132,7 +146,25 @@ export function SettingsView() {
   }
 
   function pullData() {
-    console.log(pulledData);
+    backupData()
+      .then(() => {
+        if (pulledData?.expenses) {
+          Expenses.writeAll(pulledData.expenses);
+        }
+        if (pulledData?.categories) {
+          Categories.writeAll(pulledData.categories);
+        }
+        if (pulledData?.wallets) {
+          Wallets.writeAll(pulledData.wallets);
+        }
+        if (pulledData?.settings) {
+          Settings.write(pulledData.settings);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    return true;
   }
 
   function logout() {
@@ -149,6 +181,17 @@ export function SettingsView() {
 
   return (
     <PageLayout>
+      {isOpen && (
+        <Dialog
+          title={"Are you sure?"}
+          isOpen={isOpen}
+          onOpen={onOpen}
+          onClose={onClose}
+          submit={pullData}
+        >
+          This will overwrite your local data.
+        </Dialog>
+      )}
       <div id="first-lane" className="flex-row-space no-space mb-sm">
         <div className={"flex-row-space gap-sm no-space"}>
           <LeftDrawer />
@@ -288,7 +331,7 @@ export function SettingsView() {
         {login === true && (
           <Box display={"flex"} gap={2} alignItems={"center"}>
             <Text>Last Sync: {pulledData?.lastSync ?? "None"}</Text>
-            <Button colorScheme="red" onClick={pullData}>
+            <Button colorScheme="red" onClick={onOpen}>
               Pull
             </Button>
             <Button colorScheme="blue" onClick={pushData}>
