@@ -102,6 +102,7 @@ export function SettingsView() {
     if (!id || !login) {
       return;
     }
+    setLogin(null);
     const expenses = Expenses.readAll();
     const categories = Categories.readAll();
     const data: SyncData = {
@@ -124,6 +125,9 @@ export function SettingsView() {
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setLogin(true);
       });
   }
 
