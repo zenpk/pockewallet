@@ -83,3 +83,12 @@ th,
 td {
   padding-inline: 0.5rem !important;
 }
+
+.input {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: #edf2f7;
+  width: 50%;
+  box-sizing: border-box;
+  font-weight: 500;
+}

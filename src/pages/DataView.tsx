@@ -65,6 +65,8 @@ export function DataView() {
   const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
   const [settings] = useState<Settings.Settings>(Settings.read());
+  const [customStartTime, setCustomStartTime] = useState<Date | null>(null);
+  const [customEndTime, setCustomEndTime] = useState<Date | null>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
@@ -95,11 +97,11 @@ export function DataView() {
     if (!wallet) {
       return;
     }
-    let startTime: LocalTime;
-    let endTime: LocalTime;
-    const maxDate = getMaxDate(year, month);
+    let startTime: LocalTime | null = null;
+    let endTime: LocalTime | null = null;
     switch (viewMode) {
       case ViewMode.Daily:
+        const maxDate = getMaxDate(year, month);
         startTime = {
           year: year,
           month: month,
@@ -155,6 +157,42 @@ export function DataView() {
           second: 0,
         };
         break;
+      case ViewMode.Custom:
+        if (customStartTime && customEndTime) {
+          const maxDate = getMaxDate(
+            customStartTime.getFullYear(),
+            customStartTime.getMonth() + 1
+          );
+          startTime = {
+            year: customStartTime.getFullYear(),
+            month: customStartTime.getMonth() + 1,
+            day: customStartTime.getDate(),
+            hour: 0,
+            minute: 0,
+            second: 0,
+          };
+          endTime = {
+            year:
+              customEndTime.getDate() + 1 > maxDate &&
+              customEndTime.getMonth() + 1 + 1 > 12
+                ? customEndTime.getFullYear() + 1
+                : customEndTime.getFullYear(),
+            month:
+              customEndTime.getDate() + 1 > maxDate
+                ? customEndTime.getMonth() + 1 + 1 > 12
+                  ? 1
+                  : customEndTime.getMonth() + 1 + 1
+                : customEndTime.getMonth() + 1,
+            day:
+              customEndTime.getDate() + 1 > maxDate
+                ? 1
+                : customEndTime.getDate() + 1,
+            hour: 0,
+            minute: 0,
+            second: 0,
+          };
+        }
+        break;
       default:
         startTime = {
           year: 0,
@@ -174,14 +212,25 @@ export function DataView() {
         };
         break;
     }
-    setExpenses(
-      Expenses.readRange(
-        localTimeToUnix(startTime),
-        localTimeToUnix(endTime),
-        wallet.id
-      )
-    );
-  }, [refresh, viewMode, wallet, year, month, day]);
+    if (startTime && endTime) {
+      setExpenses(
+        Expenses.readRange(
+          localTimeToUnix(startTime),
+          localTimeToUnix(endTime),
+          wallet.id
+        )
+      );
+    }
+  }, [
+    refresh,
+    viewMode,
+    wallet,
+    year,
+    month,
+    day,
+    customStartTime,
+    customEndTime,
+  ]);
 
   return (
     <PageLayout>
@@ -249,6 +298,13 @@ export function DataView() {
               >
                 {ViewMode.AllTime}
               </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setViewMode(ViewMode.Custom);
+                }}
+              >
+                {ViewMode.Custom}
+              </MenuItem>
             </MenuList>
           </Menu>
 
@@ -281,7 +337,7 @@ export function DataView() {
         </div>
       </div>
       <div id="second-lane" className="flex-row-space no-space gap-sm">
-        {viewMode !== ViewMode.AllTime && (
+        {viewMode !== ViewMode.AllTime && viewMode !== ViewMode.Custom && (
           <Select
             onChange={(event) => {
               setYear(parseInt(event.target.value));
@@ -323,6 +379,34 @@ export function DataView() {
             ))}
           </Select>
         )}
+        {viewMode === ViewMode.Custom && (
+          <>
+            <input
+              id="startDate"
+              type="date"
+              className="input"
+              value={
+                customStartTime
+                  ? customStartTime.toISOString().slice(0, 10)
+                  : ""
+              }
+              onChange={(event) => {
+                setCustomStartTime(new Date(event.target.value));
+              }}
+            ></input>
+            <input
+              id="endDate"
+              type="date"
+              className="input"
+              value={
+                customEndTime ? customEndTime.toISOString().slice(0, 10) : ""
+              }
+              onChange={(event) => {
+                setCustomEndTime(new Date(event.target.value));
+              }}
+            ></input>
+          </>
+        )}
       </div>
       <Box margin={"0.5rem"} height={"fit-content"}>
         <Text margin={0}>
@@ -334,7 +418,9 @@ export function DataView() {
         </Text>
       </Box>
       <Divider />
-      {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
+      {(viewMode === ViewMode.Monthly ||
+        viewMode === ViewMode.Daily ||
+        viewMode === ViewMode.Custom) && (
         <DataTable
           expenses={expenses}
           categories={categories}
@@ -643,7 +729,7 @@ function DataTable({
                     {settings.displayCurrency &&
                       wallet?.currency &&
                       `${wallet.currency} `}
-                    {d.amount}
+                    {Math.round(d.amount * 100) / 100}
                   </Td>
                   <Td>
                     <Badge bgColor={d.category?.color}>
@@ -744,7 +830,7 @@ function MonthlyYearlyTable({
                   {settings.displayCurrency &&
                     wallet?.currency &&
                     `${wallet.currency} `}
-                  {d.amount}
+                  {Math.round(d.amount * 100) / 100}
                 </Td>
               </Tr>
             );

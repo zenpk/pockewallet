@@ -18,6 +18,7 @@ export enum ViewMode {
   Monthly = "Monthly",
   Yearly = "Yearly",
   AllTime = "All Time",
+  Custom = "Custom",
 }
 
 export enum SortMode {

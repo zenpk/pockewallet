@@ -84,7 +84,7 @@ export function localTimeToUnix(t: LocalTime) {
 }
 
 export function localTimeToString(t: LocalTime, viewMode?: ViewMode) {
-  if (viewMode === ViewMode.Monthly) {
+  if (viewMode === ViewMode.Monthly || viewMode === ViewMode.Custom) {
     return `${t.day.toString().padStart(2, "0")}`;
   }
   if (viewMode === ViewMode.Daily) {
