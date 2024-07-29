@@ -11,4 +11,6 @@ A simple PWA to track your expenses.
 
 ## Screenshot
 
-![demo](./demo.jpg)
+![demo1](./demo1.jpg)
+
+![demo2](./demo2.png)
