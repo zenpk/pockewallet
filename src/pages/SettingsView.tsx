@@ -32,7 +32,8 @@ export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [saved, setSaved] = useState<boolean>(false);
-  const [login, setLogin] = useState<boolean | null>(null);
+  const [login, setLogin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [pulledData, setPulledData] = useState<SyncData | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -71,6 +72,7 @@ export function SettingsView() {
     if (!id || !login) {
       return;
     }
+    setLoading(true);
     axios
       .get(
         `/api/mongo/read?collection=${
@@ -86,6 +88,9 @@ export function SettingsView() {
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }
   useEffect(getData, [login]);
@@ -113,7 +118,7 @@ export function SettingsView() {
     if (!id || !login) {
       return;
     }
-    setLogin(null);
+    setLoading(true);
     const expenses = Expenses.readAll();
     const categories = Categories.readAll();
     const data: SyncData = {
@@ -141,7 +146,7 @@ export function SettingsView() {
         console.log(err);
       })
       .finally(() => {
-        setLogin(true);
+        setLoading(false);
       });
   }
 
@@ -322,13 +327,13 @@ export function SettingsView() {
         alignItems={"center"}
         justifyContent={"flex-end"}
       >
-        {login === null && <Spinner />}
-        {login === false && (
+        {(login === false || loading === true) && <Spinner />}
+        {login === false && loading === true && (
           <Button colorScheme="blue" onClick={goToLogin}>
             Login
           </Button>
         )}
-        {login === true && (
+        {login === true && loading === false && (
           <Box display={"flex"} gap={2} alignItems={"center"}>
             <Text>Last Sync: {pulledData?.lastSync ?? "None"}</Text>
             <Button colorScheme="red" onClick={onOpen}>
