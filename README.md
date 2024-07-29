@@ -9,7 +9,7 @@ A simple PWA to track your expenses.
 - Multiple wallets management.
 - View by day/month/year.
 
-## Screenshot
+## Screenshots
 
 ![demo1](./demo1.jpg)
 
