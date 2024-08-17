@@ -1,7 +1,7 @@
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
+  Box,
   Button,
-  Divider,
   Heading,
   Menu,
   MenuButton,
@@ -22,10 +22,10 @@ import { ChartType } from "../utils/consts";
 import {
   LocalTime,
   getMaxDate,
-  localTimeToUnix,
-  localTimeToLocalDate,
-  newLocalDate,
   localDateToUtcDate,
+  localTimeToLocalDate,
+  localTimeToUnix,
+  newLocalDate,
 } from "../utils/time";
 
 type PieData = {
@@ -92,8 +92,6 @@ export function ChartsView() {
     if (!wallet || !customStartTime || !customEndTime) {
       return;
     }
-    console.log(customStartTime);
-    console.log(customEndTime);
     const maxDate = getMaxDate(
       customStartTime.getFullYear(),
       customStartTime.getMonth() + 1
@@ -148,17 +146,18 @@ export function ChartsView() {
           const cat =
             categories.find((category) => category.id === exp.categoryId) ??
             Categories.defaultCategory;
-          let existing = dataMap.get(cat.name);
-          if (!existing) {
-            existing = {
-              id: cat.id,
+          let value = dataMap.get(cat.name);
+          if (!value) {
+            value = {
+              id: cat.name,
               label: cat.name,
               value: exp.amount,
               color: cat.color,
             };
           } else {
-            existing.value += exp.amount;
+            value.value += exp.amount;
           }
+          dataMap.set(cat.name, value);
         }
         for (const value of dataMap.values()) {
           value.value = Math.round(value.value * 100) / 100;
@@ -248,31 +247,36 @@ export function ChartsView() {
           }}
         ></input>
       </div>
-      <Divider />
-      {chartType === ChartType.Pie && (
-        <ResponsivePie
-          data={pieData}
-          margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
-          innerRadius={0.5}
-          padAngle={0.7}
-          cornerRadius={3}
-          activeOuterRadiusOffset={8}
-          borderWidth={1}
-          borderColor={{
-            from: "color",
-            modifiers: [["darker", 0.2]],
-          }}
-          arcLinkLabelsSkipAngle={10}
-          arcLinkLabelsTextColor="#333333"
-          arcLinkLabelsThickness={2}
-          arcLinkLabelsColor={{ from: "color" }}
-          arcLabelsSkipAngle={10}
-          arcLabelsTextColor={{
-            from: "color",
-            modifiers: [["darker", 2]],
-          }}
-        />
-      )}
+      <Box
+        width={"100%"}
+        height={"100%"}
+        display={"flex"}
+        justifyContent={"center"}
+        overflow={"auto"}
+      >
+        {chartType === ChartType.Pie && (
+          <Box minWidth={720} width={"100%"} height={"80vh"}>
+            <ResponsivePie
+              data={pieData}
+              margin={{ top: 80, right: 200, bottom: 40, left: 200 }}
+              innerRadius={0.5}
+              padAngle={0.7}
+              cornerRadius={3}
+              activeOuterRadiusOffset={8}
+              borderWidth={1}
+              borderColor={{
+                from: "color",
+                modifiers: [["darker", 0.2]],
+              }}
+              arcLabelsSkipAngle={30}
+              arcLinkLabelsSkipAngle={10}
+              arcLinkLabelsTextColor="#333333"
+              arcLinkLabelsThickness={2}
+              arcLinkLabelsColor={{ from: "color" }}
+            />
+          </Box>
+        )}
+      </Box>
     </PageLayout>
   );
 }
