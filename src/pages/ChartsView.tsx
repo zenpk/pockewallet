@@ -2,11 +2,13 @@ import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
+  Divider,
   Heading,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
+  Text,
 } from "@chakra-ui/react";
 import { ResponsivePie } from "@nivo/pie";
 import { useEffect, useState } from "react";
@@ -237,6 +239,16 @@ export function ChartsView() {
           }}
         ></input>
       </div>
+      <Box margin={"0.5rem"} height={"fit-content"}>
+        <Text margin={0}>
+          {"Total: "}
+          {wallet?.currency && `${wallet.currency} `}
+          {Math.round(
+            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+          ) / 100}
+        </Text>
+      </Box>
+      <Divider />
       <Box
         width={"100%"}
         height={"100%"}
