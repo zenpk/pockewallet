@@ -43,3 +43,7 @@ export type SendBody = {
   collection: string;
   data: SyncData;
 };
+
+export enum ChartType {
+  Pie = "Pie",
+}

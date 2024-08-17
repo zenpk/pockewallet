@@ -9,19 +9,16 @@ export namespace Categories {
     deletable: boolean;
   };
 
+  export const defaultCategory: Category = {
+    id: getUuid(),
+    name: "Others",
+    color: "#cccccc",
+    deletable: false,
+  };
+
   export function writeDefault() {
     if (!localStorage.getItem(STORE_CATEGORIES)) {
-      localStorage.setItem(
-        STORE_CATEGORIES,
-        JSON.stringify([
-          {
-            id: getUuid(),
-            name: "Others",
-            color: "#cccccc",
-            deletable: false,
-          },
-        ])
-      );
+      localStorage.setItem(STORE_CATEGORIES, JSON.stringify([defaultCategory]));
     }
     // check corrupted data
     const categories = readAll();

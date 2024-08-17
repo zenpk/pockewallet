@@ -9,7 +9,14 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { BiCog, BiCustomize, BiDollarCircle, BiMenu, BiWallet } from "react-icons/bi";
+import {
+  BiCog,
+  BiCustomize,
+  BiDollarCircle,
+  BiDoughnutChart,
+  BiMenu,
+  BiWallet,
+} from "react-icons/bi";
 
 export function LeftDrawer() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -53,6 +60,16 @@ export function LeftDrawer() {
             >
               <BiWallet />
               <Text>Wallets</Text>
+            </Link>
+            <Link
+              href="/charts"
+              display={"flex"}
+              marginBlock={"1rem"}
+              alignItems={"center"}
+              gap={"1rem"}
+            >
+              <BiDoughnutChart />
+              <Text>Charts</Text>
             </Link>
             <Link
               href="/settings"

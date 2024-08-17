@@ -9,6 +9,7 @@ import { SettingsView } from "./pages/SettingsView";
 import { WalletsView } from "./pages/WalletsView";
 import { oAuthSdk } from "./endpoints/oauth";
 import { STORE_VERIFIER } from "./utils/consts";
+import { ChartsView } from "./pages/ChartsView";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
   {
     path: "/wallets",
     element: <WalletsView />,
+  },
+  {
+    path: "/charts",
+    element: <ChartsView />,
   },
   {
     path: "/settings",

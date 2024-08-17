@@ -42,6 +42,7 @@ export type LocalTime = {
   hour: number;
   minute: number;
   second: number;
+  milli: number;
 };
 
 export function genLocalTime(
@@ -57,6 +58,7 @@ export function genLocalTime(
     hour: now.hour,
     minute: now.minute,
     second: now.second,
+    milli: now.milli,
   };
 }
 
@@ -69,6 +71,7 @@ export function unixToLocalTime(timestamp: number): LocalTime {
     hour: date.getHours(),
     minute: date.getMinutes(),
     second: date.getSeconds(),
+    milli: date.getMilliseconds(),
   };
 }
 
@@ -105,6 +108,19 @@ export function localTimeToInputString(t: LocalTime) {
     .padStart(2, "0")}T${t.hour.toString().padStart(2, "0")}:${t.minute
     .toString()
     .padStart(2, "0")}`;
+}
+
+export function localTimeToLocalDate(t: LocalTime) {
+  return new Date(t.year, t.month - 1, t.day, t.hour, t.minute, t.second);
+}
+
+export function localDateToUtcDate(date: Date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+}
+
+export function newLocalDate(timeStr: string) {
+  const date = new Date(timeStr);
+  return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
 }
 
 export function getMaxDate(year: number, month: number) {
