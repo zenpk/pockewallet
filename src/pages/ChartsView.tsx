@@ -54,17 +54,7 @@ export function ChartsView() {
       milli: 0,
     })
   );
-  const [customEndTime, setCustomEndTime] = useState<Date>(
-    localTimeToLocalDate({
-      year: new Date().getFullYear(),
-      month: new Date().getMonth() + 1,
-      day: getMaxDate(new Date().getFullYear(), new Date().getMonth() + 1),
-      hour: 0,
-      minute: 0,
-      second: 0,
-      milli: 0,
-    })
-  );
+  const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
 
   useEffect(() => {
     openDb();
