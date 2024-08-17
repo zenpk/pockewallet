@@ -248,6 +248,7 @@ export function ChartsView() {
           <Box minWidth={720} width={"100%"} height={"80vh"}>
             <ResponsivePie
               data={pieData}
+              colors={pieData.map((data) => data.color)}
               margin={{ top: 80, right: 200, bottom: 40, left: 200 }}
               innerRadius={0.5}
               padAngle={0.7}
@@ -260,7 +261,6 @@ export function ChartsView() {
               }}
               arcLabelsSkipAngle={30}
               arcLinkLabelsSkipAngle={10}
-              arcLinkLabelsTextColor="#333333"
               arcLinkLabelsThickness={2}
               arcLinkLabelsColor={{ from: "color" }}
             />
