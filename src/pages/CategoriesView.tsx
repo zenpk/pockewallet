@@ -33,15 +33,13 @@ import { genRandomColor, getUuid } from "../utils/utils";
 
 export function CategoriesView() {
   const [categories, setCategories] = useState<Categories.Category[]>([]);
-  const [refresh, setRefresh] = useState<number>(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
-    if (refresh < 0) return;
     openDb();
     setCategories(Categories.readAll());
-  }, [refresh]);
+  }, []);
 
   return (
     <PageLayout>
@@ -53,7 +51,7 @@ export function CategoriesView() {
           </Button>
           {isOpen && (
             <AddRecordForm
-              setRefresh={setRefresh}
+              setCategories={setCategories}
               isOpen={isOpen}
               onOpen={onOpen}
               onClose={onClose}
@@ -66,19 +64,19 @@ export function CategoriesView() {
         <div />
       </div>
       <Divider />
-      <DataTable categories={categories} setRefresh={setRefresh} />
+      <DataTable categories={categories} setCategories={setCategories} />
     </PageLayout>
   );
 }
 
 function AddRecordForm({
-  setRefresh,
+  setCategories,
   isOpen,
   onOpen,
   onClose,
   idValue,
 }: {
-  setRefresh: Dispatch<SetStateAction<number>>;
+  setCategories: Dispatch<SetStateAction<Categories.Category[]>>;
   isOpen: boolean; // for refreshing the component
   onOpen: () => void;
   onClose: () => void;
@@ -115,7 +113,7 @@ function AddRecordForm({
           color: color || genRandomColor(),
           deletable: deletable,
         });
-        setRefresh((prev) => prev + 1);
+        setCategories(Categories.readAll());
         return true;
       }}
       title={"Add Record"}
@@ -152,10 +150,10 @@ function AddRecordForm({
 
 function DataTable({
   categories,
-  setRefresh,
+  setCategories,
 }: {
   categories: Categories.Category[];
-  setRefresh: Dispatch<SetStateAction<number>>;
+  setCategories: Dispatch<SetStateAction<Categories.Category[]>>;
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentCategoryId, setCurrentCategoryId] = useState<string>(
@@ -166,7 +164,7 @@ function DataTable({
     <>
       {isOpen && (
         <AddRecordForm
-          setRefresh={setRefresh}
+          setCategories={setCategories}
           isOpen={isOpen}
           onOpen={onOpen}
           onClose={onClose}
@@ -210,7 +208,7 @@ function DataTable({
                           color={"#ee0000"}
                           onClick={() => {
                             Categories.remove(c.id);
-                            setRefresh((prev) => prev + 1);
+                            setCategories(Categories.readAll());
                           }}
                           isDisabled={!c.deletable}
                         >

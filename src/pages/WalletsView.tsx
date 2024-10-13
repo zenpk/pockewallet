@@ -32,15 +32,13 @@ import { getUuid } from "../utils/utils";
 
 export function WalletsView() {
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
-  const [refresh, setRefresh] = useState<number>(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
-    if (refresh < 0) return;
     openDb();
     setWallets(Wallets.readAll());
-  }, [refresh]);
+  }, []);
 
   return (
     <PageLayout>
@@ -52,7 +50,7 @@ export function WalletsView() {
           </Button>
           {isOpen && (
             <AddRecordForm
-              setRefresh={setRefresh}
+              setWallets={setWallets}
               isOpen={isOpen}
               onOpen={onOpen}
               onClose={onClose}
@@ -65,19 +63,19 @@ export function WalletsView() {
         <div />
       </div>
       <Divider />
-      <DataTable wallets={wallets} setRefresh={setRefresh} />
+      <DataTable wallets={wallets} setWallets={setWallets} />
     </PageLayout>
   );
 }
 
 function AddRecordForm({
-  setRefresh,
+  setWallets,
   isOpen,
   onOpen,
   onClose,
   idValue,
 }: {
-  setRefresh: Dispatch<SetStateAction<number>>;
+  setWallets: Dispatch<SetStateAction<Wallets.Wallet[]>>;
   isOpen: boolean; // for refreshing the component
   onOpen: () => void;
   onClose: () => void;
@@ -114,7 +112,7 @@ function AddRecordForm({
           currency: currency,
           deletable: deletable,
         });
-        setRefresh((prev) => prev + 1);
+        setWallets(Wallets.readAll());
         return true;
       }}
       title={"Add Record"}
@@ -151,10 +149,10 @@ function AddRecordForm({
 
 function DataTable({
   wallets,
-  setRefresh,
+  setWallets,
 }: {
   wallets: Wallets.Wallet[];
-  setRefresh: Dispatch<SetStateAction<number>>;
+  setWallets: Dispatch<SetStateAction<Wallets.Wallet[]>>;
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentWalletId, setCurrentWalletId] = useState<string>(
@@ -165,7 +163,7 @@ function DataTable({
     <>
       {isOpen && (
         <AddRecordForm
-          setRefresh={setRefresh}
+          setWallets={setWallets}
           isOpen={isOpen}
           onOpen={onOpen}
           onClose={onClose}
@@ -207,7 +205,7 @@ function DataTable({
                           color={"#ee0000"}
                           onClick={() => {
                             Wallets.remove(w.id);
-                            setRefresh((prev) => prev + 1);
+                            setWallets(Wallets.readAll());
                           }}
                           isDisabled={!w.deletable}
                         >
