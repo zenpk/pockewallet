@@ -82,7 +82,7 @@ export function SettingsView() {
       .get(
         `/api/mongo/read?collection=${
           import.meta.env.VITE_DB_COLLECTION
-        }&key=userId&value=${id.uuid}`
+        }&key=userId&value=${id.uuid}`,
       )
       .then((res) => {
         const data = res.data as SyncData[];
@@ -276,6 +276,23 @@ export function SettingsView() {
             setSettings((prev) => ({
               ...prev,
               displayDate: event.target.checked,
+            }));
+          }}
+        />
+      </FormControl>
+      <FormControl
+        display="flex"
+        alignItems="center"
+        justifyContent={"space-between"}
+        marginBlock={2}
+      >
+        <FormLabel>Display Full Date</FormLabel>
+        <Switch
+          isChecked={settings.displayFullDate}
+          onChange={(event) => {
+            setSettings((prev) => ({
+              ...prev,
+              displayFullDate: event.target.checked,
             }));
           }}
         />

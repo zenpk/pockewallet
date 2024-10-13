@@ -53,7 +53,7 @@ export function ChartsView() {
       minute: 0,
       second: 0,
       milli: 0,
-    })
+    }),
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
 
@@ -93,7 +93,7 @@ export function ChartsView() {
     }
     const maxDate = getMaxDate(
       customStartTime.getFullYear(),
-      customStartTime.getMonth() + 1
+      customStartTime.getMonth() + 1,
     );
     const startTime: LocalTime = {
       year: customStartTime.getFullYear(),
@@ -127,7 +127,7 @@ export function ChartsView() {
       expenses,
       localTimeToUnix(startTime),
       localTimeToUnix(endTime),
-      wallet.id
+      wallet.id,
     );
   }, [wallet, categories, expenses, customStartTime, customEndTime]);
 
@@ -252,7 +252,7 @@ export function ChartsView() {
           {wallet?.currency && `${wallet.currency} `}
           {displayData
             ? Math.round(
-                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
               ) / 100
             : 0}
         </Text>

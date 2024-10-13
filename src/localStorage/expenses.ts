@@ -22,13 +22,13 @@ export namespace Expenses {
     expenses: Expense[],
     startTime: number,
     endTime: number,
-    walletId: string
+    walletId: string,
   ) {
     return expenses.filter(
       (expense) =>
         expense.timestamp >= startTime &&
         expense.timestamp < endTime &&
-        expense.walletId === walletId
+        expense.walletId === walletId,
     );
   }
 

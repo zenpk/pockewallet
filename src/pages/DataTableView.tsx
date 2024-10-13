@@ -71,7 +71,7 @@ export function DataTableView() {
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [expenses, setExpenses] = useState<Expenses.Expense[]>(
-    Expenses.readAll()
+    Expenses.readAll(),
   );
   const [settings] = useState<Settings.Settings>(Settings.read());
   const [customStartTime, setCustomStartTime] = useState<Date>(
@@ -83,7 +83,7 @@ export function DataTableView() {
       minute: 0,
       second: 0,
       milli: 0,
-    })
+    }),
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
 
@@ -165,7 +165,7 @@ export function DataTableView() {
       case ViewMode.Custom:
         maxDate = getMaxDate(
           customStartTime.getFullYear(),
-          customStartTime.getMonth() + 1
+          customStartTime.getMonth() + 1,
         );
         startTime = {
           year: customStartTime.getFullYear(),
@@ -223,7 +223,7 @@ export function DataTableView() {
       expenses,
       localTimeToUnix(startTime),
       localTimeToUnix(endTime),
-      wallet.id
+      wallet.id,
     );
   }, [
     viewMode,
@@ -402,7 +402,7 @@ export function DataTableView() {
           {wallet?.currency && `${wallet.currency} `}
           {displayData
             ? Math.round(
-                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
               ) / 100
             : 0}
         </Text>
@@ -457,7 +457,7 @@ function AddRecordForm({
   const [amount, setAmount] = useState<number>(0);
   const [amountError, setAmountError] = useState<boolean>(false);
   const [date, setDate] = useState<number>(
-    localTimeToUnix(genLocalTime(year, month, day))
+    localTimeToUnix(genLocalTime(year, month, day)),
   );
   const [description, setDescription] = useState<string>("");
 
@@ -588,7 +588,7 @@ function DataTable({
   const [settings] = useState<Settings.Settings>(Settings.read());
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentExpenseId, setCurrentExpenseId] = useState<string>(
-    expenses[0]?.id ?? ""
+    expenses[0]?.id ?? "",
   );
   const [sortMode, setSortMode] = useState<SortMode>(SortMode.DateDesc);
   const dateSet = new Set();
@@ -598,7 +598,11 @@ function DataTable({
       return expenses.map((expense, i) => {
         return {
           id: expense.id ?? i.toString(),
-          date: localTimeToString(unixToLocalTime(expense.timestamp), viewMode),
+          date: localTimeToString(
+            unixToLocalTime(expense.timestamp),
+            viewMode,
+            settings.displayFullDate,
+          ),
           category:
             categories.find((category) => category.id === expense.categoryId) ??
             Categories.defaultCategory,
@@ -609,11 +613,11 @@ function DataTable({
     }
 
     expenses.sort((a, b) =>
-      Number(a.timestamp) > Number(b.timestamp) ? -1 : 1
+      Number(a.timestamp) > Number(b.timestamp) ? -1 : 1,
     );
     const dateDesc = transformData(expenses);
     expenses.sort((a, b) =>
-      Number(a.timestamp) < Number(b.timestamp) ? -1 : 1
+      Number(a.timestamp) < Number(b.timestamp) ? -1 : 1,
     );
     const dateAsc = transformData(expenses);
     expenses.sort((a, b) => (Number(a.amount) > Number(b.amount) ? -1 : 1));
@@ -626,7 +630,7 @@ function DataTable({
       amountDesc,
       amountAsc,
     };
-  }, [expenses, viewMode, categories]);
+  }, [expenses, viewMode, categories, settings]);
 
   useEffect(() => {
     dateSet.clear();
@@ -674,7 +678,7 @@ function DataTable({
                     setSortMode(
                       sortMode === SortMode.DateDesc
                         ? SortMode.DateAsc
-                        : SortMode.DateDesc
+                        : SortMode.DateDesc,
                     );
                   }}
                   display={"flex"}
@@ -693,7 +697,7 @@ function DataTable({
                   setSortMode(
                     sortMode === SortMode.AmountDesc
                       ? SortMode.AmountAsc
-                      : SortMode.AmountDesc
+                      : SortMode.AmountDesc,
                   );
                 }}
                 display={"flex"}
@@ -800,7 +804,7 @@ function MonthlyYearlyTable({
           amount: grouped[key].reduce(
             (acc: number, cur: Pick<Expenses.Expense, "amount">) =>
               acc + cur.amount,
-            0
+            0,
           ),
         } as MonthlyYearlyData;
       });

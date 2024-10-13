@@ -4,6 +4,7 @@ export namespace Settings {
   export type Settings = {
     displayCurrency: boolean;
     displayDate: boolean;
+    displayFullDate: boolean;
     combineDate: boolean;
     defaultWallet: string;
     defaultViewMode: ViewMode;
@@ -12,6 +13,7 @@ export namespace Settings {
   const defaultSettings: Settings = {
     displayCurrency: true,
     displayDate: true,
+    displayFullDate: false,
     combineDate: true,
     defaultWallet: "",
     defaultViewMode: ViewMode.Daily,
