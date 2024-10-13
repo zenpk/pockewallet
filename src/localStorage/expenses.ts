@@ -32,6 +32,26 @@ export namespace Expenses {
     );
   }
 
+  export function search(
+    expenses: Expense[],
+    walletId: string,
+    categoryId?: string,
+    searchString?: string,
+  ) {
+    return expenses.filter((expense) => {
+      if (expense.walletId !== walletId) {
+        return false;
+      }
+      if (categoryId && expense.categoryId !== categoryId) {
+        return false;
+      }
+      if (searchString && !expense.description?.includes(searchString)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
   export function readById(id: string) {
     const expenses = readAll();
     return expenses.find((expense) => expense.id === id);

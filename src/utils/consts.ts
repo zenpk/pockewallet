@@ -17,8 +17,8 @@ export enum ViewMode {
   Daily = "Daily",
   Monthly = "Monthly",
   Yearly = "Yearly",
-  All = "All",
   Custom = "Custom",
+  Search = "Search",
 }
 
 export enum SortMode {

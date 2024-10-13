@@ -91,17 +91,19 @@ export function localTimeToString(
   viewMode?: ViewMode,
   displayFullDate?: boolean,
 ) {
-  if (
-    !displayFullDate &&
-    (viewMode === ViewMode.Daily || viewMode === ViewMode.Custom)
-  ) {
+  if (!displayFullDate && viewMode === ViewMode.Daily) {
     return `${t.day.toString().padStart(2, "0")}`;
   }
-  return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
+  if (displayFullDate) {
+    return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
+      .toString()
+      .padStart(2, "0")} ${t.hour.toString().padStart(2, "0")}:${t.minute
+      .toString()
+      .padStart(2, "0")}:${t.second.toString().padStart(2, "0")}`;
+  }
+  return `${t.month.toString().padStart(2, "0")}-${t.day
     .toString()
-    .padStart(2, "0")} ${t.hour.toString().padStart(2, "0")}:${t.minute
-    .toString()
-    .padStart(2, "0")}:${t.second.toString().padStart(2, "0")}`;
+    .padStart(2, "0")}`;
 }
 
 export function localTimeToInputString(t: LocalTime) {

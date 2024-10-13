@@ -86,6 +86,8 @@ export function DataTableView() {
     }),
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
+  const [searchString, setSearchString] = useState("");
+  const [categoryId, setCategoryId] = useState("");
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
@@ -115,6 +117,12 @@ export function DataTableView() {
   const displayData = useMemo(() => {
     if (!wallet || !expenses || !categories) {
       return;
+    }
+    if (viewMode === ViewMode.Search) {
+      if (!searchString && !categoryId) {
+        return;
+      }
+      return Expenses.search(expenses, wallet.id, categoryId, searchString);
     }
     let startTime: LocalTime;
     let endTime: LocalTime;
@@ -230,6 +238,8 @@ export function DataTableView() {
     wallet,
     expenses,
     categories,
+    categoryId,
+    searchString,
     year,
     month,
     customStartTime,
@@ -297,17 +307,17 @@ export function DataTableView() {
               </MenuItem>
               <MenuItem
                 onClick={() => {
-                  setViewMode(ViewMode.All);
-                }}
-              >
-                {ViewMode.All}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
                   setViewMode(ViewMode.Custom);
                 }}
               >
                 {ViewMode.Custom}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setViewMode(ViewMode.Search);
+                }}
+              >
+                {ViewMode.Search}
               </MenuItem>
             </MenuList>
           </Menu>
@@ -395,6 +405,38 @@ export function DataTableView() {
             />
           </>
         )}
+        {viewMode === ViewMode.Search && (
+          <>
+            <input
+              id="searchString"
+              type="text"
+              className="input"
+              value={searchString}
+              onChange={(event) => {
+                setSearchString(event.target.value);
+              }}
+            />
+            <Select
+              value={categoryId}
+              onChange={(event) => {
+                setCategoryId(event.target.value);
+              }}
+            >
+              {[
+                <option key={""} value={""}>
+                  -
+                </option>,
+                ...categories.map((category) => {
+                  return (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  );
+                }),
+              ]}
+            </Select>
+          </>
+        )}
       </div>
       <Box margin={"0.5rem"} height={"fit-content"}>
         <Text margin={0}>
@@ -408,7 +450,9 @@ export function DataTableView() {
         </Text>
       </Box>
       <Divider />
-      {(viewMode === ViewMode.Daily || viewMode === ViewMode.Custom) &&
+      {(viewMode === ViewMode.Daily ||
+        viewMode === ViewMode.Custom ||
+        viewMode === ViewMode.Search) &&
         displayData && (
           <DataTable
             displayData={displayData}
