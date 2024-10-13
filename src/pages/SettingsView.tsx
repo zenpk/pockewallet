@@ -37,6 +37,7 @@ export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [saved, setSaved] = useState<boolean>(false);
+  const [loginChecked, setLoginChecked] = useState<boolean>(false);
   const [login, setLogin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [pulledData, setPulledData] = useState<SyncData | null>(null);
@@ -69,6 +70,9 @@ export function SettingsView() {
             console.log(err);
             setLogin(false);
           });
+      })
+      .finally(() => {
+        setLoginChecked(true);
       });
   }, []);
 
@@ -100,10 +104,14 @@ export function SettingsView() {
   }, []);
 
   useEffect(() => {
-    if (login) {
-      getData();
+    if (loginChecked) {
+      if (login) {
+        getData();
+      } else {
+        setLoading(false);
+      }
     }
-  }, [login, getData]);
+  }, [login, loginChecked, getData]);
 
   async function goToLogin() {
     const cv = await oAuthSdk.genChallengeVerifier(128);
