@@ -50,7 +50,7 @@ export namespace Categories {
   export async function write(data: Category) {
     const categories = readAll();
     const findIndex = categories.findIndex(
-      (category) => category.id === data.id
+      (category) => category.id === data.id,
     );
     if (findIndex !== -1) {
       categories[findIndex] = data;

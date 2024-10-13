@@ -21,7 +21,7 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
@@ -37,6 +37,7 @@ export function WalletsView() {
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
+    if (refresh < 0) return;
     openDb();
     setWallets(Wallets.readAll());
   }, [refresh]);
@@ -61,7 +62,7 @@ export function WalletsView() {
         <Heading padding={0} margin={0} fontSize={24}>
           Wallets
         </Heading>
-        <div></div>
+        <div />
       </div>
       <Divider />
       <DataTable wallets={wallets} setRefresh={setRefresh} />
@@ -157,7 +158,7 @@ function DataTable({
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentWalletId, setCurrentWalletId] = useState<string>(
-    wallets[0]?.id ?? ""
+    wallets[0]?.id ?? "",
   );
 
   return (
@@ -177,7 +178,7 @@ function DataTable({
             <Tr>
               <Th>Name</Th>
               <Th>Currency</Th>
-              <Th></Th>
+              <Th />
             </Tr>
           </Thead>
           <Tbody>

@@ -14,19 +14,24 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
-import { Settings } from "../db/settings";
 import { oAuthSdk } from "../endpoints/oauth";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
+import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import { SendBody, STORE_VERIFIER, SyncData, ViewMode } from "../utils/consts";
+import {
+  STORE_VERIFIER,
+  type SendBody,
+  type SyncData,
+  ViewMode,
+} from "../utils/consts";
 import { genLocalTime, localTimeToString } from "../utils/time";
 import { getIdFromCookie } from "../utils/utils";
-import { Dialog } from "../components/Dialog";
 
 export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
@@ -70,7 +75,7 @@ export function SettingsView() {
       });
   }, []);
 
-  function getData() {
+  const getData = useCallback(() => {
     const id = getIdFromCookie();
     if (!id || !login) {
       return;
@@ -80,7 +85,7 @@ export function SettingsView() {
       .get(
         `/api/mongo/read?collection=${
           import.meta.env.VITE_DB_COLLECTION
-        }&key=userId&value=${id.uuid}`
+        }&key=userId&value=${id.uuid}`,
       )
       .then((res) => {
         const data = res.data as SyncData[];
@@ -95,8 +100,13 @@ export function SettingsView() {
       .finally(() => {
         setLoading(false);
       });
-  }
-  useEffect(getData, [login]);
+  }, [login]);
+
+  useEffect(() => {
+    if (login) {
+      getData();
+    }
+  }, [login, getData]);
 
   async function goToLogin() {
     const cv = await oAuthSdk.genChallengeVerifier(128);
@@ -207,7 +217,7 @@ export function SettingsView() {
         <Heading padding={0} margin={0} fontSize={24}>
           Settings
         </Heading>
-        <div></div>
+        <div />
       </div>
       {saved && (
         <Alert status="success" marginBlock={4}>

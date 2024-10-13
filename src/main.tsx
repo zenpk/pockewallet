@@ -3,18 +3,18 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import "./global.css";
+import { oAuthSdk } from "./endpoints/oauth";
 import { CategoriesView } from "./pages/CategoriesView";
-import { DataView } from "./pages/DataView";
+import { ChartsView } from "./pages/ChartsView";
+import { DataTableView } from "./pages/DataTableView";
 import { SettingsView } from "./pages/SettingsView";
 import { WalletsView } from "./pages/WalletsView";
-import { oAuthSdk } from "./endpoints/oauth";
 import { STORE_VERIFIER } from "./utils/consts";
-import { ChartsView } from "./pages/ChartsView";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <DataView />,
+    element: <DataTableView />,
   },
   {
     path: "/categories",
@@ -51,6 +51,6 @@ if (urlParams.get("authorizationCode")) {
       <ChakraProvider>
         <RouterProvider router={router} />
       </ChakraProvider>
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 }

@@ -19,7 +19,7 @@ export namespace Wallets {
             name: "Default",
             deletable: false,
           },
-        ])
+        ]),
       );
     }
     // check corrupted data

@@ -22,7 +22,7 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
@@ -38,6 +38,7 @@ export function CategoriesView() {
   const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
 
   useEffect(() => {
+    if (refresh < 0) return;
     openDb();
     setCategories(Categories.readAll());
   }, [refresh]);
@@ -62,7 +63,7 @@ export function CategoriesView() {
         <Heading padding={0} margin={0} fontSize={24}>
           Categories
         </Heading>
-        <div></div>
+        <div />
       </div>
       <Divider />
       <DataTable categories={categories} setRefresh={setRefresh} />
@@ -158,7 +159,7 @@ function DataTable({
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentCategoryId, setCurrentCategoryId] = useState<string>(
-    categories[0]?.id ?? ""
+    categories[0]?.id ?? "",
   );
 
   return (
@@ -178,7 +179,7 @@ function DataTable({
             <Tr>
               <Th>Name</Th>
               <Th>Color</Th>
-              <Th></Th>
+              <Th />
             </Tr>
           </Thead>
           <Tbody>

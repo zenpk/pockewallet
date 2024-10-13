@@ -1,9 +1,9 @@
 import { COOKIE_ID } from "./consts";
 
 export function getUuid() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
-    const v = c == "x" ? r : (r & 0x3) | 0x8;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -39,17 +39,17 @@ export function getIdFromCookie() {
 
 export function hexToHsl(hex: string) {
   // Convert hex to RGB first
-  let r = 0,
-    g = 0,
-    b = 0;
+  let r = 0;
+  let g = 0;
+  let b = 0;
   if (hex.length === 4) {
-    r = parseInt(hex[1] + hex[1], 16);
-    g = parseInt(hex[2] + hex[2], 16);
-    b = parseInt(hex[3] + hex[3], 16);
+    r = Number.parseInt(hex[1] + hex[1], 16);
+    g = Number.parseInt(hex[2] + hex[2], 16);
+    b = Number.parseInt(hex[3] + hex[3], 16);
   } else if (hex.length === 7) {
-    r = parseInt(hex[1] + hex[2], 16);
-    g = parseInt(hex[3] + hex[4], 16);
-    b = parseInt(hex[5] + hex[6], 16);
+    r = Number.parseInt(hex[1] + hex[2], 16);
+    g = Number.parseInt(hex[3] + hex[4], 16);
+    b = Number.parseInt(hex[5] + hex[6], 16);
   }
   // Then to HSL
   r /= 255;

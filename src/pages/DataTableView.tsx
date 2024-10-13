@@ -29,35 +29,42 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { BiCalendar, BiPlus, BiWallet } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
-import { Settings } from "../db/settings";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
+import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
 import { SortMode, ViewMode } from "../utils/consts";
 import {
-  LocalTime,
+  type LocalTime,
   genLocalTime,
   getDate,
-  newLocalDate,
   getMaxDate,
   getMonth,
   getYear,
+  localDateToUtcDate,
   localTimeToInputString,
+  localTimeToLocalDate,
   localTimeToString,
   localTimeToUnix,
+  newLocalDate,
   unixToLocalTime,
-  localTimeToLocalDate,
-  localDateToUtcDate,
 } from "../utils/time";
 import { getUuid } from "../utils/utils";
 
-export function DataView() {
+export function DataTableView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
   const [year, setYear] = useState<number>(getYear());
   const [month, setMonth] = useState<number>(getMonth());
@@ -77,7 +84,7 @@ export function DataView() {
       minute: 0,
       second: 0,
       milli: 0,
-    })
+    }),
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
 
@@ -107,6 +114,9 @@ export function DataView() {
 
   // get data
   useEffect(() => {
+    if (refresh < 0) {
+      return;
+    }
     if (!wallet) {
       return;
     }
@@ -180,7 +190,7 @@ export function DataView() {
       case ViewMode.Custom:
         maxDate = getMaxDate(
           customStartTime.getFullYear(),
-          customStartTime.getMonth() + 1
+          customStartTime.getMonth() + 1,
         );
         startTime = {
           year: customStartTime.getFullYear(),
@@ -238,8 +248,8 @@ export function DataView() {
       Expenses.readRange(
         localTimeToUnix(startTime),
         localTimeToUnix(endTime),
-        wallet.id
-      )
+        wallet.id,
+      ),
     );
   }, [
     refresh,
@@ -360,12 +370,12 @@ export function DataView() {
         {viewMode !== ViewMode.AllTime && viewMode !== ViewMode.Custom && (
           <Select
             onChange={(event) => {
-              setYear(parseInt(event.target.value));
+              setYear(Number.parseInt(event.target.value));
             }}
             value={year}
           >
             {Array.from({ length: 10 }, (_, i) => (
-              <option key={i} value={getYear() - i}>
+              <option key={i.toString()} value={getYear() - i}>
                 {getYear() - i}
               </option>
             ))}
@@ -374,12 +384,12 @@ export function DataView() {
         {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
           <Select
             onChange={(event) => {
-              setMonth(parseInt(event.target.value));
+              setMonth(Number.parseInt(event.target.value));
             }}
             value={month}
           >
             {Array.from({ length: 12 }, (_, i) => (
-              <option key={i} value={i + 1}>
+              <option key={i.toString()} value={i + 1}>
                 {i + 1}
               </option>
             ))}
@@ -388,12 +398,12 @@ export function DataView() {
         {viewMode === ViewMode.Daily && (
           <Select
             onChange={(event) => {
-              setDay(parseInt(event.target.value));
+              setDay(Number.parseInt(event.target.value));
             }}
             value={day}
           >
             {Array.from({ length: getMaxDate(year, month) }, (_, i) => (
-              <option key={i} value={i + 1}>
+              <option key={i.toString()} value={i + 1}>
                 {i + 1}
               </option>
             ))}
@@ -411,7 +421,7 @@ export function DataView() {
               onChange={(event) => {
                 setCustomStartTime(newLocalDate(event.target.value));
               }}
-            ></input>
+            />
             <input
               id="endDate"
               type="date"
@@ -422,7 +432,7 @@ export function DataView() {
               onChange={(event) => {
                 setCustomEndTime(newLocalDate(event.target.value));
               }}
-            ></input>
+            />
           </>
         )}
       </div>
@@ -431,7 +441,7 @@ export function DataView() {
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
           {Math.round(
-            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
           ) / 100}
         </Text>
       </Box>
@@ -485,7 +495,7 @@ function AddRecordForm({
   const [amount, setAmount] = useState<number>(0);
   const [amountError, setAmountError] = useState<boolean>(false);
   const [date, setDate] = useState<number>(
-    localTimeToUnix(genLocalTime(year, month, day))
+    localTimeToUnix(genLocalTime(year, month, day)),
   );
   const [description, setDescription] = useState<string>("");
 
@@ -511,12 +521,12 @@ function AddRecordForm({
     if (categories.length && !idValue) {
       setCategoryId(categories[0].id);
     }
-  }, [categories]);
+  }, [categories, idValue]);
 
   return (
     <Dialog
       submit={() => {
-        if (!amount || isNaN(amount)) {
+        if (!amount || Number.isNaN(Number(amount))) {
           setAmountError(true);
           return false;
         }
@@ -582,7 +592,7 @@ function AddRecordForm({
           type="number"
           value={amount || ""}
           onChange={(event) => {
-            setAmount(parseFloat(event?.target?.value));
+            setAmount(Number.parseFloat(event?.target?.value));
           }}
         />
         {amountError && <FormErrorMessage>Invalid amount</FormErrorMessage>}
@@ -616,24 +626,27 @@ function DataTable({
   const [settings] = useState<Settings.Settings>(Settings.read());
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentExpenseId, setCurrentExpenseId] = useState<string>(
-    expenses[0]?.id ?? ""
+    expenses[0]?.id ?? "",
   );
   const [sortMode, setSortMode] = useState<SortMode>(SortMode.DateDesc);
   const dateSet = new Set();
 
-  function transformData(expenses: Expenses.Expense[]): DisplayData[] {
-    return expenses.map((expense, i) => {
-      return {
-        id: expense.id ?? i.toString(),
-        date: localTimeToString(unixToLocalTime(expense.timestamp), viewMode),
-        category:
-          categories.find((category) => category.id === expense.categoryId) ??
-          Categories.defaultCategory,
-        description: expense.description ?? "",
-        amount: expense.amount,
-      };
-    });
-  }
+  const transformData = useCallback(
+    (expenses: Expenses.Expense[]): DisplayData[] => {
+      return expenses.map((expense, i) => {
+        return {
+          id: expense.id ?? i.toString(),
+          date: localTimeToString(unixToLocalTime(expense.timestamp), viewMode),
+          category:
+            categories.find((category) => category.id === expense.categoryId) ??
+            Categories.defaultCategory,
+          description: expense.description ?? "",
+          amount: expense.amount,
+        };
+      });
+    },
+    [categories, viewMode],
+  );
 
   const transformed = useMemo(() => {
     expenses.sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1));
@@ -650,7 +663,7 @@ function DataTable({
       amountDesc,
       amountAsc,
     };
-  }, [expenses]);
+  }, [expenses, transformData]);
 
   useEffect(() => {
     dateSet.clear();
@@ -670,7 +683,7 @@ function DataTable({
       default:
         break;
     }
-  }, [sortMode, transformed]);
+  }, [dateSet, sortMode, transformed]);
 
   return (
     <>
@@ -698,7 +711,7 @@ function DataTable({
                     setSortMode(
                       sortMode === SortMode.DateDesc
                         ? SortMode.DateAsc
-                        : SortMode.DateDesc
+                        : SortMode.DateDesc,
                     );
                   }}
                   display={"flex"}
@@ -715,7 +728,7 @@ function DataTable({
                   setSortMode(
                     sortMode === SortMode.AmountDesc
                       ? SortMode.AmountAsc
-                      : SortMode.AmountDesc
+                      : SortMode.AmountDesc,
                   );
                 }}
                 display={"flex"}
@@ -726,7 +739,7 @@ function DataTable({
                 {sortMode === SortMode.AmountAsc && <ChevronUpIcon />}
               </Th>
               <Th>Category</Th>
-              <Th></Th>
+              <Th />
             </Tr>
           </Thead>
           <Tbody>
@@ -821,7 +834,7 @@ function MonthlyYearlyTable({
           amount: grouped[key].reduce(
             (acc: number, cur: Pick<Expenses.Expense, "amount">) =>
               acc + cur.amount,
-            0
+            0,
           ),
         };
       });

@@ -1,7 +1,7 @@
-import { Settings } from "../db/settings";
-import { Categories } from "../localStorage/categories";
-import { Expenses } from "../localStorage/expenses";
-import { Wallets } from "../localStorage/wallets";
+import type { Categories } from "../localStorage/categories";
+import type { Expenses } from "../localStorage/expenses";
+import type { Settings } from "../localStorage/settings";
+import type { Wallets } from "../localStorage/wallets";
 
 export const DB_VERSION = 1;
 export const DB_NAME = "MyDatabase";

@@ -15,14 +15,14 @@ import { useEffect, useState } from "react";
 import { BiDoughnutChart, BiWallet } from "react-icons/bi";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
-import { Settings } from "../db/settings";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
+import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
 import { ChartType } from "../utils/consts";
 import {
-  LocalTime,
+  type LocalTime,
   getMaxDate,
   localDateToUtcDate,
   localTimeToLocalDate,
@@ -54,7 +54,7 @@ export function ChartsView() {
       minute: 0,
       second: 0,
       milli: 0,
-    })
+    }),
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
 
@@ -86,7 +86,7 @@ export function ChartsView() {
     }
     const maxDate = getMaxDate(
       customStartTime.getFullYear(),
-      customStartTime.getMonth() + 1
+      customStartTime.getMonth() + 1,
     );
     const startTime: LocalTime = {
       year: customStartTime.getFullYear(),
@@ -120,10 +120,10 @@ export function ChartsView() {
       Expenses.readRange(
         localTimeToUnix(startTime),
         localTimeToUnix(endTime),
-        wallet.id
-      )
+        wallet.id,
+      ),
     );
-  }, [chartType, wallet, customStartTime, customEndTime]);
+  }, [wallet, customStartTime, customEndTime]);
 
   // chart data
   useEffect(() => {
@@ -131,7 +131,7 @@ export function ChartsView() {
       return;
     }
     switch (chartType) {
-      case ChartType.Pie:
+      case ChartType.Pie: {
         const dataMap = new Map<string, PieData>();
         const data: PieData[] = [];
         for (const exp of expenses) {
@@ -157,10 +157,11 @@ export function ChartsView() {
         }
         setPieData(data);
         break;
+      }
       default:
         break;
     }
-  }, [expenses, categories]);
+  }, [chartType, expenses, categories]);
 
   return (
     <PageLayout>
@@ -228,7 +229,7 @@ export function ChartsView() {
           onChange={(event) => {
             setCustomStartTime(newLocalDate(event.target.value));
           }}
-        ></input>
+        />
         <input
           id="endDate"
           type="date"
@@ -237,14 +238,14 @@ export function ChartsView() {
           onChange={(event) => {
             setCustomEndTime(newLocalDate(event.target.value));
           }}
-        ></input>
+        />
       </div>
       <Box margin={"0.5rem"} height={"fit-content"}>
         <Text margin={0}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
           {Math.round(
-            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
           ) / 100}
         </Text>
       </Box>

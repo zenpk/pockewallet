@@ -21,14 +21,14 @@ export namespace Expenses {
   export function readRange(
     startTime: number,
     endTime: number,
-    walletId: string
+    walletId: string,
   ) {
     const expenses = readAll();
     return expenses.filter(
       (expense) =>
         expense.timestamp >= startTime &&
         expense.timestamp < endTime &&
-        expense.walletId === walletId
+        expense.walletId === walletId,
     );
   }
 

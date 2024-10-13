@@ -48,7 +48,7 @@ export type LocalTime = {
 export function genLocalTime(
   year?: number,
   month?: number,
-  day?: number
+  day?: number,
 ): LocalTime {
   const now = unixToLocalTime(getUnix());
   return {
@@ -82,7 +82,7 @@ export function localTimeToUnix(t: LocalTime) {
     t.day,
     t.hour,
     t.minute,
-    t.second
+    t.second,
   ).getTime();
 }
 

@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from "axios";
+import axios, { type AxiosResponse } from "axios";
 
 export type ChallengeVerifier = {
   codeChallenge: string;
@@ -47,7 +47,7 @@ export class MyOAuthSdk {
   constructor(
     private oAuthEndpoint: string,
     private authorizeEndpoint: string,
-    private refreshEndpoint: string
+    private refreshEndpoint: string,
   ) {}
 
   public async genChallengeVerifier(len: number) {
@@ -74,12 +74,12 @@ export class MyOAuthSdk {
     const redirect = encodeURIComponent(req.redirect);
     const codeChallenge = encodeURIComponent(req.codeChallenge);
     window.location.replace(
-      `${this.oAuthEndpoint}/login?clientId=${clientId}&codeChallenge=${codeChallenge}&redirect=${redirect}`
+      `${this.oAuthEndpoint}/login?clientId=${clientId}&codeChallenge=${codeChallenge}&redirect=${redirect}`,
     );
   }
 
   public authorize(
-    codeVerifier: string
+    codeVerifier: string,
   ): Promise<AxiosResponse<AuthorizeResp>> {
     const urlParams = new URLSearchParams(window.location.search);
     const req: AuthorizeReq = {
@@ -108,9 +108,9 @@ export class MyOAuthSdk {
 
   public arrayToBase64Url(array: Uint8Array) {
     let src = "";
-    array.forEach((num) => {
+    for (const num of array) {
       src += String.fromCharCode(num);
-    });
+    }
     return this.stringToBase64Url(src);
   }
 
@@ -122,5 +122,5 @@ export class MyOAuthSdk {
 export const oAuthSdk = new MyOAuthSdk(
   import.meta.env.VITE_OAUTH_ENDPOINT as string,
   "/api/authorize",
-  "/api/refresh"
+  "/api/refresh",
 );
