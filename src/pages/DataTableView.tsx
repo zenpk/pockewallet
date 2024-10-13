@@ -32,7 +32,6 @@ import {
 import {
   type Dispatch,
   type SetStateAction,
-  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -68,12 +67,12 @@ export function DataTableView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
   const [year, setYear] = useState<number>(getYear());
   const [month, setMonth] = useState<number>(getMonth());
-  const [day, setDay] = useState<number>(getDate());
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
-  const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
-  const [refresh, setRefresh] = useState<number>(0);
+  const [expenses, setExpenses] = useState<Expenses.Expense[]>(
+    Expenses.readAll()
+  );
   const [settings] = useState<Settings.Settings>(Settings.read());
   const [customStartTime, setCustomStartTime] = useState<Date>(
     localTimeToLocalDate({
@@ -84,7 +83,7 @@ export function DataTableView() {
       minute: 0,
       second: 0,
       milli: 0,
-    }),
+    })
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
 
@@ -113,11 +112,8 @@ export function DataTableView() {
   }, [settings]);
 
   // get data
-  useEffect(() => {
-    if (refresh < 0) {
-      return;
-    }
-    if (!wallet) {
+  const displayData = useMemo(() => {
+    if (!wallet || !expenses || !categories) {
       return;
     }
     let startTime: LocalTime;
@@ -125,27 +121,6 @@ export function DataTableView() {
     let maxDate: number;
     switch (viewMode) {
       case ViewMode.Daily:
-        maxDate = getMaxDate(year, month);
-        startTime = {
-          year: year,
-          month: month,
-          day: day,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        endTime = {
-          year: day + 1 > maxDate && month + 1 > 12 ? year + 1 : year,
-          month: day + 1 > maxDate ? (month + 1 > 12 ? 1 : month + 1) : month,
-          day: day + 1 > maxDate ? 1 : day + 1,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        break;
-      case ViewMode.Monthly:
         // the start of this month
         startTime = {
           year: year,
@@ -167,7 +142,7 @@ export function DataTableView() {
           milli: 0,
         };
         break;
-      case ViewMode.Yearly:
+      case ViewMode.Monthly:
         startTime = {
           year: year,
           month: 1,
@@ -190,7 +165,7 @@ export function DataTableView() {
       case ViewMode.Custom:
         maxDate = getMaxDate(
           customStartTime.getFullYear(),
-          customStartTime.getMonth() + 1,
+          customStartTime.getMonth() + 1
         );
         startTime = {
           year: customStartTime.getFullYear(),
@@ -244,20 +219,19 @@ export function DataTableView() {
         };
         break;
     }
-    setExpenses(
-      Expenses.readRange(
-        localTimeToUnix(startTime),
-        localTimeToUnix(endTime),
-        wallet.id,
-      ),
+    return Expenses.readRange(
+      expenses,
+      localTimeToUnix(startTime),
+      localTimeToUnix(endTime),
+      wallet.id
     );
   }, [
-    refresh,
     viewMode,
     wallet,
+    expenses,
+    categories,
     year,
     month,
-    day,
     customStartTime,
     customEndTime,
   ]);
@@ -277,10 +251,10 @@ export function DataTableView() {
             <AddRecordForm
               categories={categories}
               wallet={wallet}
-              setRefresh={setRefresh}
+              setExpenses={setExpenses}
               year={year}
               month={month}
-              day={day}
+              day={getDate()}
               isOpen={isOpen}
               onOpen={onOpen}
               onClose={onClose}
@@ -323,10 +297,10 @@ export function DataTableView() {
               </MenuItem>
               <MenuItem
                 onClick={() => {
-                  setViewMode(ViewMode.AllTime);
+                  setViewMode(ViewMode.All);
                 }}
               >
-                {ViewMode.AllTime}
+                {ViewMode.All}
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -367,7 +341,7 @@ export function DataTableView() {
         </div>
       </div>
       <div id="second-lane" className="flex-row-space no-space gap-sm">
-        {viewMode !== ViewMode.AllTime && viewMode !== ViewMode.Custom && (
+        {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
           <Select
             onChange={(event) => {
               setYear(Number.parseInt(event.target.value));
@@ -381,7 +355,7 @@ export function DataTableView() {
             ))}
           </Select>
         )}
-        {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
+        {viewMode === ViewMode.Daily && (
           <Select
             onChange={(event) => {
               setMonth(Number.parseInt(event.target.value));
@@ -389,20 +363,6 @@ export function DataTableView() {
             value={month}
           >
             {Array.from({ length: 12 }, (_, i) => (
-              <option key={i.toString()} value={i + 1}>
-                {i + 1}
-              </option>
-            ))}
-          </Select>
-        )}
-        {viewMode === ViewMode.Daily && (
-          <Select
-            onChange={(event) => {
-              setDay(Number.parseInt(event.target.value));
-            }}
-            value={day}
-          >
-            {Array.from({ length: getMaxDate(year, month) }, (_, i) => (
               <option key={i.toString()} value={i + 1}>
                 {i + 1}
               </option>
@@ -440,30 +400,32 @@ export function DataTableView() {
         <Text margin={0}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
-          {Math.round(
-            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
-          ) / 100}
+          {displayData
+            ? Math.round(
+                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+              ) / 100
+            : 0}
         </Text>
       </Box>
       <Divider />
-      {(viewMode === ViewMode.Monthly ||
-        viewMode === ViewMode.Daily ||
-        viewMode === ViewMode.Custom) && (
-        <DataTable
-          expenses={expenses}
-          categories={categories}
-          wallet={wallet}
-          setRefresh={setRefresh}
-          viewMode={viewMode}
-        />
-      )}
-      {(viewMode === ViewMode.Yearly || viewMode === ViewMode.AllTime) && (
-        <MonthlyYearlyTable
-          isMonthly={viewMode === ViewMode.Yearly}
-          expenses={expenses}
-          wallet={wallet}
-        />
-      )}
+      {(viewMode === ViewMode.Daily || viewMode === ViewMode.Custom) &&
+        displayData && (
+          <DataTable
+            displayData={displayData}
+            categories={categories}
+            wallet={wallet}
+            setExpenses={setExpenses}
+            viewMode={viewMode}
+          />
+        )}
+      {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Yearly) &&
+        displayData && (
+          <MonthlyYearlyTable
+            isMonthly={viewMode === ViewMode.Monthly}
+            displayData={displayData}
+            wallet={wallet}
+          />
+        )}
     </PageLayout>
   );
 }
@@ -471,7 +433,7 @@ export function DataTableView() {
 function AddRecordForm({
   categories,
   wallet,
-  setRefresh,
+  setExpenses,
   year,
   month,
   day,
@@ -482,7 +444,7 @@ function AddRecordForm({
 }: {
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
-  setRefresh: Dispatch<SetStateAction<number>>;
+  setExpenses: Dispatch<SetStateAction<Expenses.Expense[]>>;
   year: number;
   month: number;
   day: number;
@@ -495,7 +457,7 @@ function AddRecordForm({
   const [amount, setAmount] = useState<number>(0);
   const [amountError, setAmountError] = useState<boolean>(false);
   const [date, setDate] = useState<number>(
-    localTimeToUnix(genLocalTime(year, month, day)),
+    localTimeToUnix(genLocalTime(year, month, day))
   );
   const [description, setDescription] = useState<string>("");
 
@@ -541,7 +503,7 @@ function AddRecordForm({
           timestamp: date,
           description: description || "",
         });
-        setRefresh((prev) => prev + 1);
+        setExpenses(Expenses.readAll());
         return true;
       }}
       title={"Add Record"}
@@ -610,29 +572,29 @@ type DisplayData = {
 };
 
 function DataTable({
-  expenses,
+  displayData: expenses,
   categories,
   wallet,
-  setRefresh,
+  setExpenses,
   viewMode,
 }: {
-  expenses: Expenses.Expense[];
+  displayData: Expenses.Expense[];
   categories: Categories.Category[];
   wallet: Wallets.Wallet | null;
-  setRefresh: Dispatch<SetStateAction<number>>;
+  setExpenses: Dispatch<SetStateAction<Expenses.Expense[]>>;
   viewMode: ViewMode;
 }) {
   const [data, setData] = useState<DisplayData[]>([]);
   const [settings] = useState<Settings.Settings>(Settings.read());
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentExpenseId, setCurrentExpenseId] = useState<string>(
-    expenses[0]?.id ?? "",
+    expenses[0]?.id ?? ""
   );
   const [sortMode, setSortMode] = useState<SortMode>(SortMode.DateDesc);
   const dateSet = new Set();
 
-  const transformData = useCallback(
-    (expenses: Expenses.Expense[]): DisplayData[] => {
+  const transformed = useMemo(() => {
+    function transformData(expenses: Expenses.Expense[]): DisplayData[] {
       return expenses.map((expense, i) => {
         return {
           id: expense.id ?? i.toString(),
@@ -644,18 +606,19 @@ function DataTable({
           amount: expense.amount,
         };
       });
-    },
-    [categories, viewMode],
-  );
+    }
 
-  const transformed = useMemo(() => {
-    expenses.sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1));
+    expenses.sort((a, b) =>
+      Number(a.timestamp) > Number(b.timestamp) ? -1 : 1
+    );
     const dateDesc = transformData(expenses);
-    expenses.sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1));
+    expenses.sort((a, b) =>
+      Number(a.timestamp) < Number(b.timestamp) ? -1 : 1
+    );
     const dateAsc = transformData(expenses);
-    expenses.sort((a, b) => (a.amount > b.amount ? -1 : 1));
+    expenses.sort((a, b) => (Number(a.amount) > Number(b.amount) ? -1 : 1));
     const amountDesc = transformData(expenses);
-    expenses.sort((a, b) => (a.amount < b.amount ? -1 : 1));
+    expenses.sort((a, b) => (Number(a.amount) < Number(b.amount) ? -1 : 1));
     const amountAsc = transformData(expenses);
     return {
       dateDesc,
@@ -663,7 +626,7 @@ function DataTable({
       amountDesc,
       amountAsc,
     };
-  }, [expenses, transformData]);
+  }, [expenses, viewMode, categories]);
 
   useEffect(() => {
     dateSet.clear();
@@ -691,7 +654,7 @@ function DataTable({
         <AddRecordForm
           categories={categories}
           wallet={wallet}
-          setRefresh={setRefresh}
+          setExpenses={setExpenses}
           year={0}
           month={0}
           day={0}
@@ -711,13 +674,15 @@ function DataTable({
                     setSortMode(
                       sortMode === SortMode.DateDesc
                         ? SortMode.DateAsc
-                        : SortMode.DateDesc,
+                        : SortMode.DateDesc
                     );
                   }}
                   display={"flex"}
                   alignItems={"center"}
                 >
-                  <Text>{viewMode === ViewMode.Daily ? "Time" : "Date"}</Text>
+                  <Text>
+                    {viewMode === ViewMode.Monthly ? "Month" : "Date"}
+                  </Text>
                   {sortMode === SortMode.DateDesc && <ChevronDownIcon />}
                   {sortMode === SortMode.DateAsc && <ChevronUpIcon />}
                 </Th>
@@ -728,7 +693,7 @@ function DataTable({
                   setSortMode(
                     sortMode === SortMode.AmountDesc
                       ? SortMode.AmountAsc
-                      : SortMode.AmountDesc,
+                      : SortMode.AmountDesc
                   );
                 }}
                 display={"flex"}
@@ -785,7 +750,7 @@ function DataTable({
                           color={"#ee0000"}
                           onClick={() => {
                             Expenses.remove(d.id);
-                            setRefresh((prev) => prev + 1);
+                            setExpenses(Expenses.readAll());
                           }}
                         >
                           Delete
@@ -810,43 +775,43 @@ type MonthlyYearlyData = {
 
 function MonthlyYearlyTable({
   isMonthly,
-  expenses,
+  displayData,
   wallet,
 }: {
   isMonthly?: boolean;
-  expenses: Expenses.Expense[];
+  displayData: Expenses.Expense[];
   wallet: Wallets.Wallet | null;
 }) {
-  const data = transformData(expenses);
   const [settings] = useState<Settings.Settings>(Settings.read());
 
-  function transformData(expenses: Expenses.Expense[]): MonthlyYearlyData[] {
+  const data = useMemo<MonthlyYearlyData[]>(() => {
     // @ts-ignore
-    const grouped = Object.groupBy(expenses, (expense) => {
+    const grouped = Object.groupBy(displayData, (expense) => {
       const time = unixToLocalTime(expense.timestamp);
       return isMonthly ? time.month : time.year;
     });
     return Array.from(Object.keys(grouped))
-      .sort()
+      .sort((a, b) => {
+        return Number(a) < Number(b) ? -1 : 1;
+      })
       .map((key: string) => {
         return {
           date: key,
           amount: grouped[key].reduce(
             (acc: number, cur: Pick<Expenses.Expense, "amount">) =>
               acc + cur.amount,
-            0,
+            0
           ),
-        };
+        } as MonthlyYearlyData;
       });
-  }
+  }, [displayData, isMonthly]);
 
   return (
     <TableContainer paddingTop={"0.5rem"}>
       <Table>
         <Thead>
           <Tr>
-            {isMonthly && <Th>Month</Th>}
-            {!isMonthly && <Th>Year</Th>}
+            <Th>{isMonthly ? "Month" : "Year"}</Th>
             <Th>Amount</Th>
           </Tr>
         </Thead>

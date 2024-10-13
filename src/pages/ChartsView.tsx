@@ -11,7 +11,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ResponsivePie } from "@nivo/pie";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BiDoughnutChart, BiWallet } from "react-icons/bi";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
@@ -42,7 +42,6 @@ export function ChartsView() {
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
-  const [expenses, setExpenses] = useState<Expenses.Expense[]>([]);
   const [pieData, setPieData] = useState<PieData[]>([]);
   const [settings] = useState<Settings.Settings>(Settings.read());
   const [customStartTime, setCustomStartTime] = useState<Date>(
@@ -54,9 +53,11 @@ export function ChartsView() {
       minute: 0,
       second: 0,
       milli: 0,
-    }),
+    })
   );
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
+
+  const expenses = Expenses.readAll();
 
   useEffect(() => {
     openDb();
@@ -80,13 +81,19 @@ export function ChartsView() {
   }, [settings]);
 
   // get data
-  useEffect(() => {
-    if (!wallet || !customStartTime || !customEndTime) {
+  const displayData = useMemo(() => {
+    if (
+      !wallet ||
+      !categories ||
+      !expenses ||
+      !customStartTime ||
+      !customEndTime
+    ) {
       return;
     }
     const maxDate = getMaxDate(
       customStartTime.getFullYear(),
-      customStartTime.getMonth() + 1,
+      customStartTime.getMonth() + 1
     );
     const startTime: LocalTime = {
       year: customStartTime.getFullYear(),
@@ -116,25 +123,24 @@ export function ChartsView() {
       second: 0,
       milli: 0,
     };
-    setExpenses(
-      Expenses.readRange(
-        localTimeToUnix(startTime),
-        localTimeToUnix(endTime),
-        wallet.id,
-      ),
+    return Expenses.readRange(
+      expenses,
+      localTimeToUnix(startTime),
+      localTimeToUnix(endTime),
+      wallet.id
     );
-  }, [wallet, customStartTime, customEndTime]);
+  }, [wallet, categories, expenses, customStartTime, customEndTime]);
 
   // chart data
   useEffect(() => {
-    if (!expenses.length || !categories.length) {
+    if (!displayData?.length || !categories.length) {
       return;
     }
     switch (chartType) {
       case ChartType.Pie: {
         const dataMap = new Map<string, PieData>();
         const data: PieData[] = [];
-        for (const exp of expenses) {
+        for (const exp of displayData) {
           const cat =
             categories.find((category) => category.id === exp.categoryId) ??
             Categories.defaultCategory;
@@ -161,7 +167,7 @@ export function ChartsView() {
       default:
         break;
     }
-  }, [chartType, expenses, categories]);
+  }, [chartType, displayData, categories]);
 
   return (
     <PageLayout>
@@ -244,9 +250,11 @@ export function ChartsView() {
         <Text margin={0}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
-          {Math.round(
-            expenses?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
-          ) / 100}
+          {displayData
+            ? Math.round(
+                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100
+              ) / 100
+            : 0}
         </Text>
       </Box>
       <Divider />

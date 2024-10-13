@@ -14,7 +14,7 @@ export namespace Settings {
     displayDate: true,
     combineDate: true,
     defaultWallet: "",
-    defaultViewMode: ViewMode.Monthly,
+    defaultViewMode: ViewMode.Daily,
   };
 
   export function read(): Settings {

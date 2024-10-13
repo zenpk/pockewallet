@@ -48,7 +48,7 @@ export type LocalTime = {
 export function genLocalTime(
   year?: number,
   month?: number,
-  day?: number,
+  day?: number
 ): LocalTime {
   const now = unixToLocalTime(getUnix());
   return {
@@ -82,18 +82,13 @@ export function localTimeToUnix(t: LocalTime) {
     t.day,
     t.hour,
     t.minute,
-    t.second,
+    t.second
   ).getTime();
 }
 
 export function localTimeToString(t: LocalTime, viewMode?: ViewMode) {
-  if (viewMode === ViewMode.Monthly || viewMode === ViewMode.Custom) {
+  if (viewMode === ViewMode.Daily || viewMode === ViewMode.Custom) {
     return `${t.day.toString().padStart(2, "0")}`;
-  }
-  if (viewMode === ViewMode.Daily) {
-    return `${t.hour.toString().padStart(2, "0")}:${t.minute
-      .toString()
-      .padStart(2, "0")}`;
   }
   return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
     .toString()

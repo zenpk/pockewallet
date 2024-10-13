@@ -55,7 +55,6 @@ export function SettingsView() {
       })
       .then((res) => {
         console.log(res);
-        setLoading(false);
         setLogin(true);
       })
       .catch((err) => {
@@ -64,12 +63,10 @@ export function SettingsView() {
           .post("/api/refresh", {}, { withCredentials: true })
           .then((res) => {
             console.log(res);
-            setLoading(false);
             setLogin(true);
           })
           .catch((err) => {
             console.log(err);
-            setLoading(false);
             setLogin(false);
           });
       });
@@ -77,7 +74,7 @@ export function SettingsView() {
 
   const getData = useCallback(() => {
     const id = getIdFromCookie();
-    if (!id || !login) {
+    if (!id) {
       return;
     }
     setLoading(true);
@@ -85,7 +82,7 @@ export function SettingsView() {
       .get(
         `/api/mongo/read?collection=${
           import.meta.env.VITE_DB_COLLECTION
-        }&key=userId&value=${id.uuid}`,
+        }&key=userId&value=${id.uuid}`
       )
       .then((res) => {
         const data = res.data as SyncData[];
@@ -100,7 +97,7 @@ export function SettingsView() {
       .finally(() => {
         setLoading(false);
       });
-  }, [login]);
+  }, []);
 
   useEffect(() => {
     if (login) {
