@@ -144,7 +144,11 @@ export function SettingsView() {
       categories,
       wallets,
       settings,
-      lastSync: localTimeToString(genLocalTime()),
+      lastSync: localTimeToString(
+        genLocalTime(),
+        undefined,
+        settings.displayFullDate,
+      ),
       userId: id.uuid,
     };
     if (isBackup) {
@@ -183,6 +187,8 @@ export function SettingsView() {
         if (pulledData?.settings) {
           Settings.write(pulledData.settings);
         }
+        setWallets(Wallets.readAll());
+        setSettings(Settings.read());
       })
       .catch((err) => {
         console.log(err);
@@ -349,7 +355,11 @@ export function SettingsView() {
           colorScheme="blue"
           onClick={() => {
             Settings.write(settings);
+            setSettings(Settings.read());
             setSaved(true);
+            setTimeout(() => {
+              setSaved(false);
+            }, 2000);
           }}
         >
           Save
