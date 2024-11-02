@@ -1,6 +1,5 @@
 import type { Categories } from "../localStorage/categories";
 import type { Expenses } from "../localStorage/expenses";
-import type { Settings } from "../localStorage/settings";
 import type { Wallets } from "../localStorage/wallets";
 
 export const DB_VERSION = 1;
@@ -34,14 +33,9 @@ export type SyncData = {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallets: Wallets.Wallet[];
-  settings: Settings.Settings;
-  lastSync: string;
+  settings: string;
+  timestamp: string;
   userId: string;
-};
-
-export type SendBody = {
-  collection: string;
-  data: SyncData;
 };
 
 export enum ChartType {

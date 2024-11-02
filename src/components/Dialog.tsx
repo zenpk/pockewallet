@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 
 export type DialogProps = {
   title: string;
-  submit: () => boolean;
+  submit: () => Promise<boolean> | boolean;
   children: ReactNode;
   isOpen: boolean;
   onOpen: () => void;
@@ -34,8 +34,9 @@ export function Dialog(props: DialogProps) {
             </Button>
             <Button
               colorScheme="blue"
-              onClick={() => {
-                if (props.submit()) {
+              onClick={async () => {
+                const result = await props.submit();
+                if (result) {
                   props.onClose();
                 }
               }}

@@ -14,7 +14,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog } from "../components/Dialog";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
@@ -24,12 +24,7 @@ import { Expenses } from "../localStorage/expenses";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import {
-  STORE_VERIFIER,
-  type SendBody,
-  type SyncData,
-  ViewMode,
-} from "../utils/consts";
+import { STORE_VERIFIER, type SyncData, ViewMode } from "../utils/consts";
 import { genLocalTime, localTimeToString } from "../utils/time";
 import { getIdFromCookie } from "../utils/utils";
 
@@ -76,33 +71,24 @@ export function SettingsView() {
       });
   }, []);
 
-  const getData = useCallback(() => {
+  async function getData() {
     const id = getIdFromCookie();
     if (!id) {
       return;
     }
     setLoading(true);
-    axios
-      .get(
-        `/api/mongo/read?collection=${
-          import.meta.env.VITE_DB_COLLECTION
-        }&key=userId&value=${id.uuid}`,
-      )
-      .then((res) => {
-        const data = res.data as SyncData[];
-        if (data && data.length > 0) {
-          setPulledData(data[0]);
-        }
-        console.log(res);
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+    try {
+      const res = await axios.get(`/api/wallet/read?userId=${id.uuid}`);
+      const data = res.data as SyncData;
+      setPulledData(data);
+      return data;
+    } catch (err) {
+      console.log(err);
+    }
+    setLoading(false);
+  }
 
+  // biome-ignore lint:
   useEffect(() => {
     if (loginChecked) {
       if (login) {
@@ -111,7 +97,7 @@ export function SettingsView() {
         setLoading(false);
       }
     }
-  }, [login, loginChecked, getData]);
+  }, [login, loginChecked]);
 
   async function goToLogin() {
     const cv = await oAuthSdk.genChallengeVerifier(128);
@@ -123,15 +109,7 @@ export function SettingsView() {
     });
   }
 
-  function pushData() {
-    updateData();
-  }
-
-  async function backupData() {
-    await updateData(true);
-  }
-
-  function updateData(isBackup = false) {
+  async function pushData() {
     const id = getIdFromCookie();
     if (!id || !login) {
       return;
@@ -143,56 +121,43 @@ export function SettingsView() {
       expenses,
       categories,
       wallets,
-      settings,
-      lastSync: localTimeToString(
+      settings: JSON.stringify(settings),
+      timestamp: localTimeToString(
         genLocalTime(),
         undefined,
         settings.displayFullDate,
       ),
       userId: id.uuid,
     };
-    if (isBackup) {
-      data.userId += "-backup";
+    try {
+      const res = await axios.post("/api/wallet/write", data);
+      console.log(res);
+    } catch (err) {
+      console.log(err);
     }
-    const sendBody: SendBody = {
-      collection: import.meta.env.VITE_DB_COLLECTION as string,
-      data,
-    };
-    return axios
-      .post(`/api/mongo/update?key=userId&value=${data.userId}`, sendBody)
-      .then((res) => {
-        console.log(res);
-        getData();
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    setLoading(false);
   }
 
-  function pullData() {
-    backupData()
-      .then(() => {
-        if (pulledData?.expenses) {
-          Expenses.writeAll(pulledData.expenses);
-        }
-        if (pulledData?.categories) {
-          Categories.writeAll(pulledData.categories);
-        }
-        if (pulledData?.wallets) {
-          Wallets.writeAll(pulledData.wallets);
-        }
-        if (pulledData?.settings) {
-          Settings.write(pulledData.settings);
-        }
-        setWallets(Wallets.readAll());
-        setSettings(Settings.read());
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+  async function pullData() {
+    await pushData();
+    const data = await getData();
+    if (!data) {
+      return false;
+    }
+    if (data?.expenses) {
+      Expenses.writeAll(data.expenses);
+    }
+    if (data?.categories) {
+      Categories.writeAll(data.categories);
+    }
+    if (data?.wallets) {
+      Wallets.writeAll(data.wallets);
+    }
+    if (data?.settings) {
+      Settings.write(JSON.parse(data.settings) as Settings.Settings);
+    }
+    setWallets(Wallets.readAll());
+    setSettings(Settings.read());
     return true;
   }
 
@@ -380,7 +345,7 @@ export function SettingsView() {
         )}
         {login === true && loading === false && (
           <Box display={"flex"} gap={2} alignItems={"center"}>
-            <Text>Last Sync: {pulledData?.lastSync ?? "None"}</Text>
+            <Text>Last Sync: {pulledData?.timestamp ?? "None"}</Text>
             <Button colorScheme="red" onClick={onOpen}>
               Pull
             </Button>
