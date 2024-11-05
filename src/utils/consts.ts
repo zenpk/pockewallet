@@ -34,7 +34,7 @@ export type SyncData = {
   categories: Categories.Category[];
   wallets: Wallets.Wallet[];
   settings: string;
-  timestamp: string;
+  timestamp: number;
   userId: string;
 };
 

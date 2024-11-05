@@ -25,7 +25,7 @@ import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
 import { STORE_VERIFIER, type SyncData, ViewMode } from "../utils/consts";
-import { genLocalTime, localTimeToString } from "../utils/time";
+import { getUnix, localTimeToString, unixToLocalTime } from "../utils/time";
 import { getIdFromCookie } from "../utils/utils";
 
 export function SettingsView() {
@@ -122,11 +122,7 @@ export function SettingsView() {
       categories,
       wallets,
       settings: JSON.stringify(settings),
-      timestamp: localTimeToString(
-        genLocalTime(),
-        undefined,
-        settings.displayFullDate,
-      ),
+      timestamp: getUnix(),
       userId: id.uuid,
     };
     try {
@@ -348,7 +344,16 @@ export function SettingsView() {
         )}
         {login === true && loading === false && (
           <Box display={"flex"} gap={2} alignItems={"center"}>
-            <Text>Last Sync: {pulledData?.timestamp ?? "None"}</Text>
+            <Text>
+              Last Sync:{" "}
+              {pulledData?.timestamp
+                ? localTimeToString(
+                    unixToLocalTime(pulledData.timestamp),
+                    undefined,
+                    settings.displayFullDate,
+                  )
+                : "None"}
+            </Text>
             <Button colorScheme="red" onClick={onOpen}>
               Pull
             </Button>
