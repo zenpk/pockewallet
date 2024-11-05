@@ -131,6 +131,7 @@ export function SettingsView() {
         data,
       );
       console.log(res);
+      setPulledData(data);
     } catch (err) {
       console.log(err);
       return false;
