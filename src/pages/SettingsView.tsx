@@ -71,34 +71,6 @@ export function SettingsView() {
       });
   }, []);
 
-  async function getData() {
-    const id = getIdFromCookie();
-    if (!id) {
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await axios.get(`/api/wallet/pull?userId=${id.uuid}`);
-      const data = res.data as SyncData;
-      setPulledData(data);
-      return data;
-    } catch (err) {
-      console.log(err);
-    }
-    setLoading(false);
-  }
-
-  // biome-ignore lint:
-  useEffect(() => {
-    if (loginChecked) {
-      if (login) {
-        getData();
-      } else {
-        setLoading(false);
-      }
-    }
-  }, [login, loginChecked]);
-
   async function goToLogin() {
     const cv = await oAuthSdk.genChallengeVerifier(128);
     localStorage.setItem(STORE_VERIFIER, cv.codeVerifier);
@@ -109,18 +81,46 @@ export function SettingsView() {
     });
   }
 
-  async function pushData(isBackup = false) {
+  useEffect(() => {
+    if (loginChecked && login) {
+      getSettings();
+    }
+  }, [login, loginChecked]);
+
+  async function getSettings(): Promise<boolean> {
     const id = getIdFromCookie();
-    if (!id || !login) {
-      return;
+    if (!id) {
+      return false;
     }
     setLoading(true);
-    const expenses = Expenses.readAll();
-    const categories = Categories.readAll();
+    let data: SyncData;
+    try {
+      const res = await axios.get(`/api/wallet/settings?userId=${id.uuid}`);
+      data = res.data as SyncData;
+      setPulledData(data);
+    } catch (err) {
+      console.log(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+    if (data?.settings) {
+      Settings.write(JSON.parse(data.settings) as Settings.Settings);
+    }
+    setSettings(Settings.read());
+    return true;
+  }
+
+  async function pushData(isBackup = false): Promise<boolean> {
+    const id = getIdFromCookie();
+    if (!id || !login) {
+      return false;
+    }
+    setLoading(true);
     const data: SyncData = {
-      expenses,
-      categories,
-      wallets,
+      expenses: Expenses.readAll(),
+      categories: Categories.readAll(),
+      wallets: wallets,
       settings: JSON.stringify(settings),
       timestamp: getUnix(),
       userId: id.uuid,
@@ -133,13 +133,34 @@ export function SettingsView() {
       console.log(res);
     } catch (err) {
       console.log(err);
+      return false;
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+    return true;
   }
 
-  async function pullData() {
-    await pushData(true);
-    const data = await getData();
+  async function pullData(): Promise<boolean> {
+    const pushOk = await pushData(true);
+    if (!pushOk) {
+      return false;
+    }
+    const id = getIdFromCookie();
+    if (!id) {
+      return false;
+    }
+    setLoading(true);
+    let data: SyncData;
+    try {
+      const res = await axios.get(`/api/wallet/pull?userId=${id.uuid}`);
+      data = res.data as SyncData;
+      setPulledData(data);
+    } catch (err) {
+      console.log(err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
     if (!data) {
       return false;
     }
