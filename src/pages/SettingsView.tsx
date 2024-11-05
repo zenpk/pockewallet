@@ -78,7 +78,7 @@ export function SettingsView() {
     }
     setLoading(true);
     try {
-      const res = await axios.get(`/api/wallet/read?userId=${id.uuid}`);
+      const res = await axios.get(`/api/wallet/pull?userId=${id.uuid}`);
       const data = res.data as SyncData;
       setPulledData(data);
       return data;
@@ -109,7 +109,7 @@ export function SettingsView() {
     });
   }
 
-  async function pushData() {
+  async function pushData(isBackup = false) {
     const id = getIdFromCookie();
     if (!id || !login) {
       return;
@@ -130,7 +130,10 @@ export function SettingsView() {
       userId: id.uuid,
     };
     try {
-      const res = await axios.post("/api/wallet/write", data);
+      const res = await axios.post(
+        isBackup ? "/api/wallet/backup" : "/api/wallet/push",
+        data,
+      );
       console.log(res);
     } catch (err) {
       console.log(err);
@@ -139,7 +142,7 @@ export function SettingsView() {
   }
 
   async function pullData() {
-    await pushData();
+    await pushData(true);
     const data = await getData();
     if (!data) {
       return false;
@@ -349,7 +352,12 @@ export function SettingsView() {
             <Button colorScheme="red" onClick={onOpen}>
               Pull
             </Button>
-            <Button colorScheme="blue" onClick={pushData}>
+            <Button
+              colorScheme="blue"
+              onClick={() => {
+                pushData(false);
+              }}
+            >
               Push
             </Button>
             <Button colorScheme="blue" onClick={logout}>
