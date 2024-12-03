@@ -358,7 +358,7 @@ export function SettingsView() {
         alignItems={"center"}
         justifyContent={"flex-end"}
       >
-        {loading === true && <Spinner />}
+        {loginChecked && loading === true && <Spinner />}
         {login === false && loading === false && (
           <Button colorScheme="blue" onClick={goToLogin}>
             Login
