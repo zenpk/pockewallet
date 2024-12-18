@@ -34,7 +34,7 @@ export function SettingsView() {
   const [saved, setSaved] = useState<boolean>(false);
   const [loginChecked, setLoginChecked] = useState<boolean>(false);
   const [login, setLogin] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [pulledData, setPulledData] = useState<SyncData | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -358,13 +358,13 @@ export function SettingsView() {
         alignItems={"center"}
         justifyContent={"flex-end"}
       >
-        {loginChecked && loading === true && <Spinner />}
-        {login === false && loading === false && (
+        {(!loginChecked || loading) && <Spinner />}
+        {loginChecked && !loading && !login && (
           <Button colorScheme="blue" onClick={goToLogin}>
             Login
           </Button>
         )}
-        {login === true && loading === false && (
+        {loginChecked && !loading && login && (
           <Box display={"flex"} gap={2} alignItems={"center"}>
             <Text>
               Last Sync:{" "}
