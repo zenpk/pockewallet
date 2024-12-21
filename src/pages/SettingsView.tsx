@@ -34,7 +34,7 @@ export function SettingsView() {
   const [saved, setSaved] = useState<boolean>(false);
   const [loginChecked, setLoginChecked] = useState<boolean>(false);
   const [login, setLogin] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [pulledData, setPulledData] = useState<SyncData | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -52,6 +52,7 @@ export function SettingsView() {
       .then((res) => {
         console.log(res);
         setLogin(true);
+        setLoginChecked(true);
       })
       .catch((err) => {
         console.log(err);
@@ -60,14 +61,13 @@ export function SettingsView() {
           .then((res) => {
             console.log(res);
             setLogin(true);
+            setLoginChecked(true);
           })
           .catch((err) => {
             console.log(err);
             setLogin(false);
+            setLoginChecked(true);
           });
-      })
-      .finally(() => {
-        setLoginChecked(true);
       });
   }, []);
 
@@ -101,8 +101,6 @@ export function SettingsView() {
     } catch (err) {
       console.log(err);
       return false;
-    } finally {
-      setLoading(false);
     }
     if (data?.settings) {
       Settings.write(JSON.parse(data.settings) as Settings.Settings);
@@ -193,6 +191,11 @@ export function SettingsView() {
         console.log(err);
       });
   }
+
+  // loginChecked, login, loading
+  const displayLogin = loginChecked && !login; // 100, 101
+  const displaySpinner = !loginChecked || (login && loading); // 000, 001, 010, 011, 111
+  const displayPushPull = loginChecked && login && !loading; // 110
 
   return (
     <PageLayout>
@@ -358,13 +361,13 @@ export function SettingsView() {
         alignItems={"center"}
         justifyContent={"flex-end"}
       >
-        {(!loginChecked || loading) && <Spinner />}
-        {loginChecked && !loading && !login && (
+        {displayLogin && (
           <Button colorScheme="blue" onClick={goToLogin}>
             Login
           </Button>
         )}
-        {loginChecked && !loading && login && (
+        {displaySpinner && <Spinner />}
+        {displayPushPull && (
           <Box display={"flex"} gap={2} alignItems={"center"}>
             <Text>
               Last Sync:{" "}
