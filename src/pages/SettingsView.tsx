@@ -100,12 +100,14 @@ export function SettingsView() {
       setPulledData(data);
     } catch (err) {
       console.log(err);
+      setLoading(false);
       return false;
     }
     if (data?.settings) {
       Settings.write(JSON.parse(data.settings) as Settings.Settings);
     }
     setSettings(Settings.read());
+    setLoading(false);
     return true;
   }
 
