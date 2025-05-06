@@ -246,6 +246,20 @@ export function DataTableView() {
     customEndTime,
   ]);
 
+  const amountPerDay = useMemo(() => {
+    if (!displayData) {
+      return 0;
+    }
+    const dayMap: Set<string> = new Set();
+    let total = 0;
+    for (const data of displayData) {
+      total += data.amount;
+      const localTime = unixToLocalTime(data.timestamp);
+      dayMap.add(`${localTime.year}-${localTime.month}-${localTime.day}`);
+    }
+    return Math.round((total / dayMap.size) * 100) / 100;
+  }, [displayData]);
+
   return (
     <PageLayout>
       <div
@@ -438,7 +452,12 @@ export function DataTableView() {
           </>
         )}
       </div>
-      <Box margin={"0.5rem"} height={"fit-content"}>
+      <Box
+        margin={"0.5rem"}
+        height={"fit-content"}
+        display={"flex"}
+        justifyContent={"space-between"}
+      >
         <Text margin={0}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
@@ -447,6 +466,11 @@ export function DataTableView() {
                 displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
               ) / 100
             : 0}
+        </Text>
+        <Text margin={0}>
+          {"Per day: "}
+          {wallet?.currency && `${wallet.currency} `}
+          {amountPerDay}
         </Text>
       </Box>
       <Divider />
