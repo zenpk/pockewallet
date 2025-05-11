@@ -251,12 +251,16 @@ export function DataTableView() {
       return null;
     }
     let total = 0;
+    let minDay = 31;
+    let maxDay = 1;
     let minMonth = 12;
     let maxMonth = 1;
     let minYear = 9999;
     for (const data of displayData) {
       total += data.amount;
       const localTime = unixToLocalTime(data.timestamp);
+      minDay = Math.min(minDay, localTime.day);
+      maxDay = Math.max(maxDay, localTime.day);
       minMonth = Math.min(minMonth, localTime.month);
       maxMonth = Math.max(maxMonth, localTime.month);
       minYear = Math.min(minYear, localTime.year);
@@ -267,7 +271,11 @@ export function DataTableView() {
     switch (viewMode) {
       case ViewMode.Daily: {
         name = "day";
-        divide = currentDate.day;
+        if (currentDate.year === year && currentDate.month === month) {
+          divide = currentDate.day;
+        } else {
+          divide = maxDay - minDay + 1;
+        }
         break;
       }
       case ViewMode.Monthly: {
@@ -286,10 +294,11 @@ export function DataTableView() {
       }
       case ViewMode.Custom: {
         name = "day";
-        divide = Math.round(
-          (customEndTime.getUTCSeconds() - customStartTime.getUTCSeconds()) /
-            (60 * 60 * 24),
-        );
+        divide =
+          Math.round(
+            (customEndTime.getUTCSeconds() - customStartTime.getUTCSeconds()) /
+              (60 * 60 * 24),
+          ) + 1;
         break;
       }
       case ViewMode.Search: {
@@ -303,7 +312,7 @@ export function DataTableView() {
       return null;
     }
     return { name: name, amount: Math.round((total / divide) * 100) / 100 };
-  }, [displayData, viewMode, year, customStartTime, customEndTime]);
+  }, [displayData, viewMode, month, year, customStartTime, customEndTime]);
 
   return (
     <PageLayout>
