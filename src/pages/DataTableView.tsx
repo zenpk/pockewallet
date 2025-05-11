@@ -296,8 +296,8 @@ export function DataTableView() {
         name = "day";
         divide =
           Math.round(
-            (customEndTime.getUTCSeconds() - customStartTime.getUTCSeconds()) /
-              (60 * 60 * 24),
+            (customEndTime.getTime() - customStartTime.getTime()) /
+              (1000 * 60 * 60 * 24),
           ) + 1;
         break;
       }
