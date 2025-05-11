@@ -246,19 +246,64 @@ export function DataTableView() {
     customEndTime,
   ]);
 
-  const amountPerDay = useMemo(() => {
-    if (!displayData) {
-      return 0;
+  const amountPerX = useMemo<{ name: string; amount: number } | null>(() => {
+    if (!displayData || displayData.length === 0) {
+      return null;
     }
-    const dayMap: Set<string> = new Set();
     let total = 0;
+    let minMonth = 12;
+    let maxMonth = 1;
+    let minYear = 9999;
     for (const data of displayData) {
       total += data.amount;
       const localTime = unixToLocalTime(data.timestamp);
-      dayMap.add(`${localTime.year}-${localTime.month}-${localTime.day}`);
+      minMonth = Math.min(minMonth, localTime.month);
+      maxMonth = Math.max(maxMonth, localTime.month);
+      minYear = Math.min(minYear, localTime.year);
     }
-    return Math.round((total / dayMap.size) * 100) / 100;
-  }, [displayData]);
+    let divide = 0;
+    let name = "";
+    const currentDate = genLocalTime();
+    switch (viewMode) {
+      case ViewMode.Daily: {
+        name = "day";
+        divide = currentDate.day;
+        break;
+      }
+      case ViewMode.Monthly: {
+        name = "month";
+        if (currentDate.year === year) {
+          divide = currentDate.month - minMonth + 1;
+        } else {
+          divide = maxMonth - minMonth + 1;
+        }
+        break;
+      }
+      case ViewMode.Yearly: {
+        name = "year";
+        divide = currentDate.year - minYear + 1;
+        break;
+      }
+      case ViewMode.Custom: {
+        name = "day";
+        divide = Math.round(
+          (customEndTime.getUTCSeconds() - customStartTime.getUTCSeconds()) /
+            (60 * 60 * 24),
+        );
+        break;
+      }
+      case ViewMode.Search: {
+        return null;
+      }
+      default: {
+        return null;
+      }
+    }
+    if (divide <= 0) {
+      return null;
+    }
+    return { name: name, amount: Math.round((total / divide) * 100) / 100 };
+  }, [displayData, viewMode, year, customStartTime, customEndTime]);
 
   return (
     <PageLayout>
@@ -467,11 +512,13 @@ export function DataTableView() {
               ) / 100
             : 0}
         </Text>
-        <Text margin={0}>
-          {"Per day: "}
-          {wallet?.currency && `${wallet.currency} `}
-          {amountPerDay}
-        </Text>
+        {amountPerX && (
+          <Text margin={0}>
+            {`Per ${amountPerX.name}: `}
+            {wallet?.currency && `${wallet.currency} `}
+            {amountPerX.amount}
+          </Text>
+        )}
       </Box>
       <Divider />
       {(viewMode === ViewMode.Daily ||
