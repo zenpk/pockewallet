@@ -792,7 +792,7 @@ function DataTable({
           idValue={currentExpenseId}
         />
       )}
-      <TableContainer padding={0} height={"100%"}>
+      <TableContainer padding={0} height={"100%"} minHeight={"50vh"}>
         <Table>
           <Thead>
             <Tr>
