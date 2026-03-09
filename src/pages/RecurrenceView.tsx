@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
-import { BiMenu, BiPlus } from "react-icons/bi";
+import { BiChevronDown, BiMenu, BiPlus, BiWallet } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
@@ -7,6 +7,7 @@ import { PageLayout } from "../components/PageLayout";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Recurrences } from "../localStorage/recurrences";
+import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
 import { RecurrenceFrequency } from "../utils/consts";
@@ -22,6 +23,8 @@ export function RecurrenceView() {
   const [recurrences, setRecurrences] = useState<Recurrences.Recurrence[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
+  const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
+  const [settings] = useState(Settings.read());
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
@@ -30,6 +33,22 @@ export function RecurrenceView() {
     setCategories(Categories.readAll());
     setWallets(Wallets.readAll());
   }, []);
+
+  useEffect(() => {
+    if (!wallets.length) return;
+    if (settings.defaultWallet) {
+      const result = Wallets.readById(settings.defaultWallet);
+      if (result) {
+        setWallet(result);
+        return;
+      }
+    }
+    setWallet(wallets[0]);
+  }, [wallets, settings]);
+
+  const filtered = wallet
+    ? recurrences.filter((r) => r.walletId === wallet.id)
+    : recurrences;
 
   return (
     <PageLayout>
@@ -43,7 +62,7 @@ export function RecurrenceView() {
           {isOpen && (
             <AddRecurrenceForm
               categories={categories}
-              wallets={wallets}
+              wallet={wallet}
               setRecurrences={setRecurrences}
               isOpen={isOpen}
               onOpen={onOpen}
@@ -52,11 +71,31 @@ export function RecurrenceView() {
           )}
         </div>
         <h2 className="page-title">Recurrence</h2>
-        <div />
+        <Dropdown
+          trigger={
+            <button type="button" className="btn">
+              <BiWallet />
+              {wallet?.name ?? ""}
+              <BiChevronDown />
+            </button>
+          }
+        >
+          {wallets.map((w) => (
+            <DropdownItem
+              key={w.id}
+              onClick={() => {
+                const result = Wallets.readById(w.id);
+                if (result) setWallet(result);
+              }}
+            >
+              {w.name}
+            </DropdownItem>
+          ))}
+        </Dropdown>
       </div>
       <hr />
       <RecurrenceTable
-        recurrences={recurrences}
+        recurrences={filtered}
         setRecurrences={setRecurrences}
         categories={categories}
         wallets={wallets}
@@ -67,7 +106,7 @@ export function RecurrenceView() {
 
 function AddRecurrenceForm({
   categories,
-  wallets,
+  wallet,
   setRecurrences,
   isOpen,
   onOpen,
@@ -75,7 +114,7 @@ function AddRecurrenceForm({
   idValue,
 }: {
   categories: Categories.Category[];
-  wallets: Wallets.Wallet[];
+  wallet: Wallets.Wallet | null;
   setRecurrences: Dispatch<SetStateAction<Recurrences.Recurrence[]>>;
   isOpen: boolean;
   onOpen: () => void;
@@ -86,7 +125,6 @@ function AddRecurrenceForm({
   const [amount, setAmount] = useState<number>(0);
   const [amountError, setAmountError] = useState(false);
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
-  const [walletId, setWalletId] = useState(wallets[0]?.id ?? "");
   const [frequency, setFrequency] = useState<RecurrenceFrequency>(
     RecurrenceFrequency.Monthly,
   );
@@ -102,7 +140,6 @@ function AddRecurrenceForm({
         setDescription(rec.description);
         setAmount(rec.amount);
         setCategoryId(rec.categoryId);
-        setWalletId(rec.walletId);
         setFrequency(rec.frequency);
         setStartDate(rec.startDate);
         setEnabled(rec.enabled);
@@ -114,10 +151,6 @@ function AddRecurrenceForm({
     if (!idValue && categories.length) setCategoryId(categories[0].id);
   }, [categories, idValue]);
 
-  useEffect(() => {
-    if (!idValue && wallets.length) setWalletId(wallets[0].id);
-  }, [wallets, idValue]);
-
   return (
     <Dialog
       submit={() => {
@@ -125,13 +158,14 @@ function AddRecurrenceForm({
           setAmountError(true);
           return false;
         }
+        if (!wallet) return false;
         const existing = idValue ? Recurrences.readById(idValue) : undefined;
         Recurrences.write({
           id: idValue || getUuid(),
           description,
           amount,
           categoryId,
-          walletId,
+          walletId: wallet.id,
           frequency,
           startDate,
           lastGeneratedDate: existing?.lastGeneratedDate ?? 0,
@@ -174,20 +208,6 @@ function AddRecurrenceForm({
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="form-group">
-        <label>Wallet</label>
-        <select
-          className="input"
-          value={walletId}
-          onChange={(e) => setWalletId(e.target.value)}
-        >
-          {wallets.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
             </option>
           ))}
         </select>
@@ -256,7 +276,11 @@ function RecurrenceTable({
       {isOpen && (
         <AddRecurrenceForm
           categories={categories}
-          wallets={wallets}
+          wallet={
+            wallets.find(
+              (w) => w.id === Recurrences.readById(currentId)?.walletId,
+            ) ?? null
+          }
           setRecurrences={setRecurrences}
           isOpen={isOpen}
           onOpen={onOpen}
@@ -271,7 +295,6 @@ function RecurrenceTable({
               <th>Description</th>
               <th>Amount</th>
               <th>Category</th>
-              <th>Wallet</th>
               <th>Frequency</th>
               <th>Enabled</th>
               <th />
@@ -282,7 +305,6 @@ function RecurrenceTable({
               const cat =
                 categories.find((c) => c.id === r.categoryId) ??
                 Categories.defaultCategory;
-              const wal = wallets.find((w) => w.id === r.walletId);
               return (
                 <tr key={r.id}>
                   <td>{r.description}</td>
@@ -295,7 +317,6 @@ function RecurrenceTable({
                       {cat.name}
                     </span>
                   </td>
-                  <td>{wal?.name ?? "-"}</td>
                   <td>{r.frequency}</td>
                   <td>{r.enabled ? "Yes" : "No"}</td>
                   <td>
