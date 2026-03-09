@@ -1,14 +1,4 @@
-import {
-  Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from "@chakra-ui/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 export type DialogProps = {
   title: string;
@@ -20,32 +10,55 @@ export type DialogProps = {
 };
 
 export function Dialog(props: DialogProps) {
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (props.isOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!props.isOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [props.isOpen]);
+
   return (
-    <>
-      <Modal isOpen={props.isOpen} onClose={props.onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{props.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{props.children}</ModalBody>
-          <ModalFooter>
-            <Button colorScheme="gray" mr={3} onClick={props.onClose}>
-              Close
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={async () => {
-                const result = await props.submit();
-                if (result) {
-                  props.onClose();
-                }
-              }}
-            >
-              Confirm
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    <dialog
+      ref={ref}
+      onClose={props.onClose}
+      onClick={(e) => {
+        if (e.target === ref.current) props.onClose();
+      }}
+    >
+      <div className="dialog-header">
+        <span>{props.title}</span>
+        <button
+          type="button"
+          className="dialog-close-btn"
+          onClick={props.onClose}
+          aria-label="Close"
+        >
+          &#x2715;
+        </button>
+      </div>
+      <div className="dialog-body">{props.children}</div>
+      <div className="dialog-footer">
+        <button type="button" className="btn btn-gray" onClick={props.onClose}>
+          Close
+        </button>
+        <button
+          type="button"
+          className="btn btn-blue"
+          onClick={async () => {
+            const result = await props.submit();
+            if (result) {
+              props.onClose();
+            }
+          }}
+        >
+          Confirm
+        </button>
+      </div>
+    </dialog>
   );
 }

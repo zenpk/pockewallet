@@ -1,45 +1,25 @@
 import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  HamburgerIcon,
-} from "@chakra-ui/icons";
-import {
-  Badge,
-  Box,
-  Button,
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Heading,
-  IconButton,
-  Input,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Select,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useDisclosure,
-} from "@chakra-ui/react";
-import {
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { BiCalendar, BiPlus, BiWallet } from "react-icons/bi";
+import {
+  BiCalendar,
+  BiChevronDown,
+  BiChevronUp,
+  BiMenu,
+  BiPlus,
+  BiWallet,
+} from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
+import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
+import { PendingRecurrences } from "../components/PendingRecurrences";
+import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { Settings } from "../localStorage/settings";
@@ -88,8 +68,14 @@ export function DataTableView() {
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
   const [searchString, setSearchString] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [recurrenceChecked, setRecurrenceChecked] = useState(false);
 
-  const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const onRecurrenceDone = useCallback(() => {
+    setRecurrenceChecked(true);
+    setExpenses(Expenses.readAll());
+  }, []);
 
   useEffect(() => {
     openDb();
@@ -98,20 +84,17 @@ export function DataTableView() {
   }, []);
 
   useEffect(() => {
-    if (wallets.length) {
-      setWallet(wallets[0]);
-    }
-  }, [wallets]);
-
-  useEffect(() => {
+    if (!wallets.length) return;
     if (settings.defaultViewMode) setViewMode(settings.defaultViewMode);
     if (settings.defaultWallet) {
       const result = Wallets.readById(settings.defaultWallet);
       if (result) {
         setWallet(result);
+        return;
       }
     }
-  }, [settings]);
+    setWallet(wallets[0]);
+  }, [wallets, settings]);
 
   // get data
   const displayData = useMemo(() => {
@@ -129,7 +112,6 @@ export function DataTableView() {
     let maxDate: number;
     switch (viewMode) {
       case ViewMode.Daily:
-        // the start of this month
         startTime = {
           year: year,
           month: month,
@@ -139,7 +121,6 @@ export function DataTableView() {
           second: 0,
           milli: 0,
         };
-        // the start of the next month
         endTime = {
           year: month + 1 > 12 ? year + 1 : year,
           month: month + 1 > 12 ? 1 : month + 1,
@@ -316,15 +297,17 @@ export function DataTableView() {
 
   return (
     <PageLayout>
+      {!recurrenceChecked && <PendingRecurrences onDone={onRecurrenceDone} />}
       <div
         id="first-lane"
         className="flex-row-space no-space mb-sm flex-wrap flex-wrap-third"
       >
         <div className={"flex-row-space gap-sm no-space"}>
           <LeftDrawer />
-          <Button leftIcon={<BiPlus />} bgColor={"green.100"} onClick={onOpen}>
+          <button type="button" className="btn btn-green" onClick={onOpen}>
+            <BiPlus />
             Add
-          </Button>
+          </button>
           {isOpen && (
             <AddRecordForm
               categories={categories}
@@ -339,88 +322,63 @@ export function DataTableView() {
             />
           )}
         </div>
-        <Heading padding={0} margin={0} fontSize={24}>
-          Expenses
-        </Heading>
+        <h2 className="page-title">Expenses</h2>
         <div className="flex-row-space gap-sm no-space">
-          <Menu>
-            <MenuButton
-              as={Button}
-              leftIcon={<BiCalendar />}
-              rightIcon={<ChevronDownIcon />}
-            >
-              {viewMode}
-            </MenuButton>
-            <MenuList>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Daily);
-                }}
-              >
-                {ViewMode.Daily}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Monthly);
-                }}
-              >
-                {ViewMode.Monthly}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Yearly);
-                }}
-              >
-                {ViewMode.Yearly}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Custom);
-                }}
-              >
-                {ViewMode.Custom}
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  setViewMode(ViewMode.Search);
-                }}
-              >
-                {ViewMode.Search}
-              </MenuItem>
-            </MenuList>
-          </Menu>
+          <Dropdown
+            trigger={
+              <button type="button" className="btn">
+                <BiCalendar />
+                {viewMode}
+                <BiChevronDown />
+              </button>
+            }
+          >
+            <DropdownItem onClick={() => setViewMode(ViewMode.Daily)}>
+              {ViewMode.Daily}
+            </DropdownItem>
+            <DropdownItem onClick={() => setViewMode(ViewMode.Monthly)}>
+              {ViewMode.Monthly}
+            </DropdownItem>
+            <DropdownItem onClick={() => setViewMode(ViewMode.Yearly)}>
+              {ViewMode.Yearly}
+            </DropdownItem>
+            <DropdownItem onClick={() => setViewMode(ViewMode.Custom)}>
+              {ViewMode.Custom}
+            </DropdownItem>
+            <DropdownItem onClick={() => setViewMode(ViewMode.Search)}>
+              {ViewMode.Search}
+            </DropdownItem>
+          </Dropdown>
 
-          <Menu>
-            <MenuButton
-              as={Button}
-              leftIcon={<BiWallet />}
-              rightIcon={<ChevronDownIcon />}
-            >
-              {wallet?.name ?? ""}
-            </MenuButton>
-            <MenuList>
-              {wallets.map((wallet) => {
-                return (
-                  <MenuItem
-                    key={wallet.id}
-                    onClick={() => {
-                      const result = Wallets.readById(wallet.id);
-                      if (result) {
-                        setWallet(result);
-                      }
-                    }}
-                  >
-                    {wallet.name}
-                  </MenuItem>
-                );
-              })}
-            </MenuList>
-          </Menu>
+          <Dropdown
+            trigger={
+              <button type="button" className="btn">
+                <BiWallet />
+                {wallet?.name ?? ""}
+                <BiChevronDown />
+              </button>
+            }
+          >
+            {wallets.map((wallet) => (
+              <DropdownItem
+                key={wallet.id}
+                onClick={() => {
+                  const result = Wallets.readById(wallet.id);
+                  if (result) {
+                    setWallet(result);
+                  }
+                }}
+              >
+                {wallet.name}
+              </DropdownItem>
+            ))}
+          </Dropdown>
         </div>
       </div>
       <div id="second-lane" className="flex-row-space no-space gap-sm">
         {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
-          <Select
+          <select
+            className="input"
             onChange={(event) => {
               setYear(Number.parseInt(event.target.value));
             }}
@@ -431,10 +389,11 @@ export function DataTableView() {
                 {getYear() - i}
               </option>
             ))}
-          </Select>
+          </select>
         )}
         {viewMode === ViewMode.Daily && (
-          <Select
+          <select
+            className="input"
             onChange={(event) => {
               setMonth(Number.parseInt(event.target.value));
             }}
@@ -445,7 +404,7 @@ export function DataTableView() {
                 {i + 1}
               </option>
             ))}
-          </Select>
+          </select>
         )}
         {viewMode === ViewMode.Custom && (
           <>
@@ -484,35 +443,32 @@ export function DataTableView() {
                 setSearchString(event.target.value);
               }}
             />
-            <Select
+            <select
+              className="input"
               value={categoryId}
               onChange={(event) => {
                 setCategoryId(event.target.value);
               }}
             >
-              {[
-                <option key={""} value={""}>
-                  -
-                </option>,
-                ...categories.map((category) => {
-                  return (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  );
-                }),
-              ]}
-            </Select>
+              <option value="">-</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </>
         )}
       </div>
-      <Box
-        margin={"0.5rem"}
-        height={"fit-content"}
-        display={"flex"}
-        justifyContent={"space-between"}
+      <div
+        style={{
+          margin: "0.5rem",
+          height: "fit-content",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
       >
-        <Text margin={0}>
+        <span style={{ margin: 0 }}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
           {displayData
@@ -520,16 +476,16 @@ export function DataTableView() {
                 displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
               ) / 100
             : 0}
-        </Text>
+        </span>
         {amountPerX && (
-          <Text margin={0}>
+          <span style={{ margin: 0 }}>
             {`Per ${amountPerX.name}: `}
             {wallet?.currency && `${wallet.currency} `}
             {amountPerX.amount}
-          </Text>
+          </span>
         )}
-      </Box>
-      <Divider />
+      </div>
+      <hr />
       {(viewMode === ViewMode.Daily ||
         viewMode === ViewMode.Custom ||
         viewMode === ViewMode.Search) &&
@@ -635,19 +591,21 @@ function AddRecordForm({
       onOpen={onOpen}
       onClose={onClose}
     >
-      <FormControl>
-        <FormLabel>Date</FormLabel>
-        <Input
+      <div className="form-group">
+        <label>Date</label>
+        <input
+          className="input"
           type="datetime-local"
           value={localTimeToInputString(unixToLocalTime(date))}
           onChange={(event) => {
             setDate(new Date(event.target.value).getTime());
           }}
         />
-      </FormControl>
-      <FormControl>
-        <FormLabel mt={2}>Category</FormLabel>
-        <Select
+      </div>
+      <div className="form-group">
+        <label>Category</label>
+        <select
+          className="input"
           value={categoryId}
           onChange={(event) => {
             setCategoryId(event.target.value);
@@ -660,29 +618,31 @@ function AddRecordForm({
               </option>
             );
           })}
-        </Select>
-      </FormControl>
-      <FormControl>
-        <FormLabel mt={2}>Description (Optional)</FormLabel>
-        <Input
+        </select>
+      </div>
+      <div className="form-group">
+        <label>Description (Optional)</label>
+        <input
+          className="input"
           type="text"
           value={description}
           onChange={(event) => {
             setDescription(event.target.value);
           }}
         />
-      </FormControl>
-      <FormControl isInvalid={amountError}>
-        <FormLabel mt={2}>Amount</FormLabel>
-        <Input
+      </div>
+      <div className="form-group">
+        <label>Amount</label>
+        <input
+          className="input"
           type="number"
           value={amount || ""}
           onChange={(event) => {
             setAmount(Number.parseFloat(event?.target?.value));
           }}
         />
-        {amountError && <FormErrorMessage>Invalid amount</FormErrorMessage>}
-      </FormControl>
+        {amountError && <span className="form-error">Invalid amount</span>}
+      </div>
     </Dialog>
   );
 }
@@ -792,12 +752,12 @@ function DataTable({
           idValue={currentExpenseId}
         />
       )}
-      <TableContainer padding={0} height={"100%"} minHeight={"50vh"}>
-        <Table>
-          <Thead>
-            <Tr>
+      <div className="scroll-area">
+        <table>
+          <thead>
+            <tr>
               {settings.displayDate && (
-                <Th
+                <th
                   onClick={() => {
                     setSortMode(
                       sortMode === SortMode.DateDesc
@@ -805,18 +765,21 @@ function DataTable({
                         : SortMode.DateDesc,
                     );
                   }}
-                  display={"flex"}
-                  alignItems={"center"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
                 >
-                  <Text>
+                  <span>
                     {viewMode === ViewMode.Monthly ? "Month" : "Date"}
-                  </Text>
-                  {sortMode === SortMode.DateDesc && <ChevronDownIcon />}
-                  {sortMode === SortMode.DateAsc && <ChevronUpIcon />}
-                </Th>
+                  </span>
+                  {sortMode === SortMode.DateDesc && <BiChevronDown />}
+                  {sortMode === SortMode.DateAsc && <BiChevronUp />}
+                </th>
               )}
-              <Th>Description</Th>
-              <Th
+              <th>Description</th>
+              <th
                 onClick={() => {
                   setSortMode(
                     sortMode === SortMode.AmountDesc
@@ -824,18 +787,21 @@ function DataTable({
                       : SortMode.AmountDesc,
                   );
                 }}
-                display={"flex"}
-                alignItems={"center"}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
               >
-                <Text>Amount</Text>
-                {sortMode === SortMode.AmountDesc && <ChevronDownIcon />}
-                {sortMode === SortMode.AmountAsc && <ChevronUpIcon />}
-              </Th>
-              <Th>Category</Th>
-              <Th />
-            </Tr>
-          </Thead>
-          <Tbody>
+                <span>Amount</span>
+                {sortMode === SortMode.AmountDesc && <BiChevronDown />}
+                {sortMode === SortMode.AmountAsc && <BiChevronUp />}
+              </th>
+              <th>Category</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
             {data.map((d) => {
               const hasTheDate = dateSet.has(d.date);
               if (
@@ -846,52 +812,60 @@ function DataTable({
                 dateSet.add(d.date);
               }
               return (
-                <Tr key={d.id}>
-                  {settings.displayDate && <Td>{!hasTheDate ? d.date : ""}</Td>}
-                  <Td>{d.description}</Td>
-                  <Td>
+                <tr key={d.id}>
+                  {settings.displayDate && <td>{!hasTheDate ? d.date : ""}</td>}
+                  <td>{d.description}</td>
+                  <td>
                     {settings.displayCurrency &&
                       wallet?.currency &&
                       `${wallet.currency} `}
                     {Math.round(d.amount * 100) / 100}
-                  </Td>
-                  <Td>
-                    <Badge bgColor={d.category.color}>{d.category.name}</Badge>
-                  </Td>
-                  <Td>
-                    <Menu>
-                      <MenuButton
-                        as={IconButton}
-                        icon={<HamburgerIcon />}
-                        aria-label="Options"
-                      />
-                      <MenuList>
-                        <MenuItem
-                          onClick={() => {
-                            setCurrentExpenseId(d.id);
-                            onOpen();
-                          }}
+                  </td>
+                  <td>
+                    <span
+                      className="badge"
+                      style={{ backgroundColor: d.category.color }}
+                    >
+                      {d.category.name}
+                    </span>
+                  </td>
+                  <td>
+                    <Dropdown
+                      trigger={
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          aria-label="Options"
                         >
-                          Edit
-                        </MenuItem>
-                        <MenuItem
-                          color={"#ee0000"}
-                          onClick={() => {
-                            Expenses.remove(d.id);
-                            setExpenses(Expenses.readAll());
-                          }}
-                        >
-                          Delete
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Td>
-                </Tr>
+                          <BiMenu />
+                        </button>
+                      }
+                    >
+                      <DropdownItem
+                        onClick={() => {
+                          setCurrentExpenseId(d.id);
+                          onOpen();
+                        }}
+                      >
+                        Edit
+                      </DropdownItem>
+                      <DropdownItem
+                        style={{ color: "#ee0000" }}
+                        onClick={() => {
+                          Expenses.remove(d.id);
+                          setExpenses(Expenses.readAll());
+                        }}
+                      >
+                        Delete
+                      </DropdownItem>
+                    </Dropdown>
+                  </td>
+                </tr>
               );
             })}
-          </Tbody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
@@ -935,30 +909,30 @@ function MonthlyYearlyTable({
   }, [displayData, isMonthly]);
 
   return (
-    <TableContainer paddingTop={"0.5rem"}>
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>{isMonthly ? "Month" : "Year"}</Th>
-            <Th>Amount</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
+    <div className="scroll-area" style={{ paddingTop: "0.5rem" }}>
+      <table>
+        <thead>
+          <tr>
+            <th>{isMonthly ? "Month" : "Year"}</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
           {data.map((d) => {
             return (
-              <Tr key={d.date}>
-                <Td>{d.date}</Td>
-                <Td>
+              <tr key={d.date}>
+                <td>{d.date}</td>
+                <td>
                   {settings.displayCurrency &&
                     wallet?.currency &&
                     `${wallet.currency} `}
                   {Math.round(d.amount * 100) / 100}
-                </Td>
-              </Tr>
+                </td>
+              </tr>
             );
           })}
-        </Tbody>
-      </Table>
-    </TableContainer>
+        </tbody>
+      </table>
+    </div>
   );
 }

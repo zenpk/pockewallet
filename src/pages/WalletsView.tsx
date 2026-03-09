@@ -1,31 +1,10 @@
-import { HamburgerIcon } from "@chakra-ui/icons";
-import {
-  Button,
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Heading,
-  IconButton,
-  Input,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-  useDisclosure,
-} from "@chakra-ui/react";
 import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
-import { BiPlus } from "react-icons/bi";
+import { BiMenu, BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
+import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
+import { useDisclosure } from "../hooks/useDisclosure";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
 import { getUuid } from "../utils/utils";
@@ -33,7 +12,7 @@ import { getUuid } from "../utils/utils";
 export function WalletsView() {
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
 
-  const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     openDb();
@@ -45,9 +24,10 @@ export function WalletsView() {
       <div id="first-lane" className="flex-row-space no-space mb-sm">
         <div className={"flex-row-space gap-sm no-space"}>
           <LeftDrawer />
-          <Button leftIcon={<BiPlus />} bgColor={"green.100"} onClick={onOpen}>
+          <button type="button" className="btn btn-green" onClick={onOpen}>
+            <BiPlus />
             Add
-          </Button>
+          </button>
           {isOpen && (
             <AddRecordForm
               setWallets={setWallets}
@@ -57,12 +37,10 @@ export function WalletsView() {
             />
           )}
         </div>
-        <Heading padding={0} margin={0} fontSize={24}>
-          Wallets
-        </Heading>
+        <h2 className="page-title">Wallets</h2>
         <div />
       </div>
-      <Divider />
+      <hr />
       <DataTable wallets={wallets} setWallets={setWallets} />
     </PageLayout>
   );
@@ -76,7 +54,7 @@ function AddRecordForm({
   idValue,
 }: {
   setWallets: Dispatch<SetStateAction<Wallets.Wallet[]>>;
-  isOpen: boolean; // for refreshing the component
+  isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
   idValue?: string;
@@ -120,9 +98,10 @@ function AddRecordForm({
       onOpen={onOpen}
       onClose={onClose}
     >
-      <FormControl isInvalid={nameError}>
-        <FormLabel mt={2}>Name</FormLabel>
-        <Input
+      <div className="form-group">
+        <label>Name</label>
+        <input
+          className="input"
           type="text"
           value={name}
           onChange={(event) => {
@@ -130,19 +109,20 @@ function AddRecordForm({
           }}
         />
         {nameError && (
-          <FormErrorMessage>Wallet name mustn't be empty</FormErrorMessage>
+          <span className="form-error">Wallet name mustn't be empty</span>
         )}
-      </FormControl>
-      <FormControl>
-        <FormLabel mt={2}>Currency ($ € £ ￥) (Optional)</FormLabel>
-        <Input
+      </div>
+      <div className="form-group">
+        <label>Currency ($ € £ ￥) (Optional)</label>
+        <input
+          className="input"
           type="text"
           value={currency}
           onChange={(event) => {
             setCurrency(event.target.value);
           }}
         />
-      </FormControl>
+      </div>
     </Dialog>
   );
 }
@@ -170,56 +150,59 @@ function DataTable({
           idValue={currentWalletId}
         />
       )}
-      <TableContainer padding={0} height={"100%"}>
-        <Table>
-          <Thead>
-            <Tr>
-              <Th>Name</Th>
-              <Th>Currency</Th>
-              <Th />
-            </Tr>
-          </Thead>
-          <Tbody>
+      <div className="scroll-area">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Currency</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
             {wallets.map((w) => {
               return (
-                <Tr key={w.id}>
-                  <Td>{w.name}</Td>
-                  <Td>{w.currency}</Td>
-                  <Td>
-                    <Menu>
-                      <MenuButton
-                        as={IconButton}
-                        icon={<HamburgerIcon />}
-                        aria-label="Options"
-                      />
-                      <MenuList>
-                        <MenuItem
-                          onClick={() => {
-                            setCurrentWalletId(w.id);
-                            onOpen();
-                          }}
+                <tr key={w.id}>
+                  <td>{w.name}</td>
+                  <td>{w.currency}</td>
+                  <td>
+                    <Dropdown
+                      trigger={
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          aria-label="Options"
                         >
-                          Edit
-                        </MenuItem>
-                        <MenuItem
-                          color={"#ee0000"}
-                          onClick={() => {
-                            Wallets.remove(w.id);
-                            setWallets(Wallets.readAll());
-                          }}
-                          isDisabled={!w.deletable}
-                        >
-                          Delete
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Td>
-                </Tr>
+                          <BiMenu />
+                        </button>
+                      }
+                    >
+                      <DropdownItem
+                        onClick={() => {
+                          setCurrentWalletId(w.id);
+                          onOpen();
+                        }}
+                      >
+                        Edit
+                      </DropdownItem>
+                      <DropdownItem
+                        style={{ color: "#ee0000" }}
+                        onClick={() => {
+                          if (!w.deletable) return;
+                          Wallets.remove(w.id);
+                          setWallets(Wallets.readAll());
+                        }}
+                      >
+                        Delete
+                      </DropdownItem>
+                    </Dropdown>
+                  </td>
+                </tr>
               );
             })}
-          </Tbody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

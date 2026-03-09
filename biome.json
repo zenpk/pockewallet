@@ -9,6 +9,10 @@
       },
       "correctness": {
         "noUnusedImports": "warn"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "off",
+        "useKeyWithClickEvents": "off"
       }
     }
   },

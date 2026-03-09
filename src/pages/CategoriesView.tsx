@@ -1,32 +1,10 @@
-import { HamburgerIcon } from "@chakra-ui/icons";
-import {
-  Badge,
-  Button,
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Heading,
-  IconButton,
-  Input,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-  useDisclosure,
-} from "@chakra-ui/react";
 import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
-import { BiPlus } from "react-icons/bi";
+import { BiMenu, BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
+import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
+import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { openDb } from "../localStorage/shared";
 import { genRandomColor, getUuid } from "../utils/utils";
@@ -34,7 +12,7 @@ import { genRandomColor, getUuid } from "../utils/utils";
 export function CategoriesView() {
   const [categories, setCategories] = useState<Categories.Category[]>([]);
 
-  const { isOpen, onOpen, onClose } = useDisclosure(); // for dialog
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     openDb();
@@ -46,9 +24,10 @@ export function CategoriesView() {
       <div id="first-lane" className="flex-row-space no-space mb-sm">
         <div className={"flex-row-space gap-sm no-space"}>
           <LeftDrawer />
-          <Button leftIcon={<BiPlus />} bgColor={"green.100"} onClick={onOpen}>
+          <button type="button" className="btn btn-green" onClick={onOpen}>
+            <BiPlus />
             Add
-          </Button>
+          </button>
           {isOpen && (
             <AddRecordForm
               setCategories={setCategories}
@@ -58,12 +37,10 @@ export function CategoriesView() {
             />
           )}
         </div>
-        <Heading padding={0} margin={0} fontSize={24}>
-          Categories
-        </Heading>
+        <h2 className="page-title">Categories</h2>
         <div />
       </div>
-      <Divider />
+      <hr />
       <DataTable categories={categories} setCategories={setCategories} />
     </PageLayout>
   );
@@ -77,7 +54,7 @@ function AddRecordForm({
   idValue,
 }: {
   setCategories: Dispatch<SetStateAction<Categories.Category[]>>;
-  isOpen: boolean; // for refreshing the component
+  isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
   idValue?: string;
@@ -121,9 +98,10 @@ function AddRecordForm({
       onOpen={onOpen}
       onClose={onClose}
     >
-      <FormControl isInvalid={nameError}>
-        <FormLabel mt={2}>Name</FormLabel>
-        <Input
+      <div className="form-group">
+        <label>Name</label>
+        <input
+          className="input"
           type="text"
           value={name}
           onChange={(event) => {
@@ -131,19 +109,20 @@ function AddRecordForm({
           }}
         />
         {nameError && (
-          <FormErrorMessage>Category name mustn't be empty</FormErrorMessage>
+          <span className="form-error">Category name mustn't be empty</span>
         )}
-      </FormControl>
-      <FormControl>
-        <FormLabel mt={2}>Color (Leave empty for random)</FormLabel>
-        <Input
+      </div>
+      <div className="form-group">
+        <label>Color (Leave empty for random)</label>
+        <input
+          className="input"
           type="text"
           value={color}
           onChange={(event) => {
             setColor(event.target.value);
           }}
         />
-      </FormControl>
+      </div>
     </Dialog>
   );
 }
@@ -171,58 +150,66 @@ function DataTable({
           idValue={currentCategoryId}
         />
       )}
-      <TableContainer padding={0} height={"100%"}>
-        <Table>
-          <Thead>
-            <Tr>
-              <Th>Name</Th>
-              <Th>Color</Th>
-              <Th />
-            </Tr>
-          </Thead>
-          <Tbody>
+      <div className="scroll-area">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Color</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
             {categories.map((c) => {
               return (
-                <Tr key={c.id}>
-                  <Td>
-                    <Badge bgColor={c.color}>{c.name}</Badge>
-                  </Td>
-                  <Td>{c.color}</Td>
-                  <Td>
-                    <Menu>
-                      <MenuButton
-                        as={IconButton}
-                        icon={<HamburgerIcon />}
-                        aria-label="Options"
-                      />
-                      <MenuList>
-                        <MenuItem
-                          onClick={() => {
-                            setCurrentCategoryId(c.id);
-                            onOpen();
-                          }}
+                <tr key={c.id}>
+                  <td>
+                    <span
+                      className="badge"
+                      style={{ backgroundColor: c.color }}
+                    >
+                      {c.name}
+                    </span>
+                  </td>
+                  <td>{c.color}</td>
+                  <td>
+                    <Dropdown
+                      trigger={
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          aria-label="Options"
                         >
-                          Edit
-                        </MenuItem>
-                        <MenuItem
-                          color={"#ee0000"}
-                          onClick={() => {
-                            Categories.remove(c.id);
-                            setCategories(Categories.readAll());
-                          }}
-                          isDisabled={!c.deletable}
-                        >
-                          Delete
-                        </MenuItem>
-                      </MenuList>
-                    </Menu>
-                  </Td>
-                </Tr>
+                          <BiMenu />
+                        </button>
+                      }
+                    >
+                      <DropdownItem
+                        onClick={() => {
+                          setCurrentCategoryId(c.id);
+                          onOpen();
+                        }}
+                      >
+                        Edit
+                      </DropdownItem>
+                      <DropdownItem
+                        style={{ color: "#ee0000" }}
+                        onClick={() => {
+                          if (!c.deletable) return;
+                          Categories.remove(c.id);
+                          setCategories(Categories.readAll());
+                        }}
+                      >
+                        Delete
+                      </DropdownItem>
+                    </Dropdown>
+                  </td>
+                </tr>
               );
             })}
-          </Tbody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

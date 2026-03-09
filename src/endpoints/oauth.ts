@@ -1,5 +1,3 @@
-import axios, { type AxiosResponse } from "axios";
-
 export type ChallengeVerifier = {
   codeChallenge: string;
   codeVerifier: string;
@@ -43,6 +41,31 @@ export type PublicJwk = {
   n: string;
 };
 
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`POST ${url} failed: ${res.status}`);
+  return res.json();
+}
+
+async function getJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
+  return res.json();
+}
+
+function arrayToBase64Url(array: Uint8Array): string {
+  let src = "";
+  for (const num of array) {
+    src += String.fromCharCode(num);
+  }
+  return btoa(src).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export class MyOAuthSdk {
   constructor(
     private oAuthEndpoint: string,
@@ -50,72 +73,51 @@ export class MyOAuthSdk {
     private refreshEndpoint: string,
   ) {}
 
-  public async genChallengeVerifier(len: number) {
+  public async genChallengeVerifier(len: number): Promise<ChallengeVerifier> {
     const bytes = new Uint8Array(len);
     crypto.getRandomValues(bytes);
+    const verifier = arrayToBase64Url(bytes);
 
-    const verifier = this.arrayToBase64Url(bytes);
+    const hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(verifier),
+    );
+    const challenge = arrayToBase64Url(new Uint8Array(hashBuffer));
 
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = new Uint8Array(hashBuffer);
-    const challenge = this.arrayToBase64Url(hashArray);
-
-    const challengeVerifier: ChallengeVerifier = {
-      codeChallenge: challenge,
-      codeVerifier: verifier,
-    };
-    return challengeVerifier;
+    return { codeChallenge: challenge, codeVerifier: verifier };
   }
 
   public redirectLogin(req: LoginReq) {
-    const clientId = encodeURIComponent(req.clientId);
-    const redirect = encodeURIComponent(req.redirect);
-    const codeChallenge = encodeURIComponent(req.codeChallenge);
-    window.location.replace(
-      `${this.oAuthEndpoint}/login?clientId=${clientId}&codeChallenge=${codeChallenge}&redirect=${redirect}`,
-    );
+    const params = new URLSearchParams({
+      clientId: req.clientId,
+      redirect: req.redirect,
+      codeChallenge: req.codeChallenge,
+    });
+    window.location.replace(`${this.oAuthEndpoint}/login?${params}`);
   }
 
-  public authorize(
-    codeVerifier: string,
-  ): Promise<AxiosResponse<AuthorizeResp>> {
-    const urlParams = new URLSearchParams(window.location.search);
-    const req: AuthorizeReq = {
-      codeVerifier: codeVerifier,
-      authorizationCode: urlParams.get("authorizationCode") ?? "",
-    };
-    return axios.post(this.authorizeEndpoint, req);
-  }
-
-  public refresh(refreshToken: string): Promise<AxiosResponse<RefreshResp>> {
-    const req: RefreshReq = {
-      refreshToken: refreshToken,
-    };
-    return axios.post(this.refreshEndpoint, req);
-  }
-
-  public verify(accessToken: string): Promise<AxiosResponse<CommonResp>> {
-    return axios.post(`${this.oAuthEndpoint}/api/auth/verify`, {
-      accessToken: accessToken,
+  public authorize(codeVerifier: string): Promise<AuthorizeResp> {
+    const authorizationCode =
+      new URLSearchParams(window.location.search).get("authorizationCode") ??
+      "";
+    return postJson<AuthorizeResp>(this.authorizeEndpoint, {
+      codeVerifier,
+      authorizationCode,
     });
   }
 
-  public getPublicKey(): Promise<AxiosResponse<PublicJwk>> {
-    return axios.get(`${this.oAuthEndpoint}/api/setup/public-key`);
+  public refresh(refreshToken: string): Promise<RefreshResp> {
+    return postJson<RefreshResp>(this.refreshEndpoint, { refreshToken });
   }
 
-  public arrayToBase64Url(array: Uint8Array) {
-    let src = "";
-    for (const num of array) {
-      src += String.fromCharCode(num);
-    }
-    return this.stringToBase64Url(src);
+  public verify(accessToken: string): Promise<CommonResp> {
+    return postJson<CommonResp>(`${this.oAuthEndpoint}/api/auth/verify`, {
+      accessToken,
+    });
   }
 
-  public stringToBase64Url(src: string) {
-    return btoa(src).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  public getPublicKey(): Promise<PublicJwk> {
+    return getJson<PublicJwk>(`${this.oAuthEndpoint}/api/setup/public-key`);
   }
 }
 

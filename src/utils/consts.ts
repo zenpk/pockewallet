@@ -1,5 +1,6 @@
 import type { Categories } from "../localStorage/categories";
 import type { Expenses } from "../localStorage/expenses";
+import type { Recurrences } from "../localStorage/recurrences";
 import type { Wallets } from "../localStorage/wallets";
 
 export const DB_VERSION = 1;
@@ -11,6 +12,14 @@ export const STORE_WALLETS = "Wallets";
 export const STORE_VERIFIER = "Verifier";
 
 export const KEY_SETTINGS = "Settings";
+export const STORE_RECURRENCES = "Recurrences";
+
+export enum RecurrenceFrequency {
+  Daily = "Daily",
+  Weekly = "Weekly",
+  Monthly = "Monthly",
+  Yearly = "Yearly",
+}
 
 export enum ViewMode {
   Daily = "Daily",
@@ -33,6 +42,7 @@ export type SyncData = {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallets: Wallets.Wallet[];
+  recurrences?: Recurrences.Recurrence[];
   settings: string;
   timestamp: number;
   userId: string;

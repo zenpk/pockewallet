@@ -1,0 +1,191 @@
+import { RecurrenceFrequency, STORE_RECURRENCES } from "../utils/consts";
+import {
+  type LocalTime,
+  localTimeToUnix,
+  unixToLocalTime,
+} from "../utils/time";
+import { getUuid } from "../utils/utils";
+import { Expenses } from "./expenses";
+
+export namespace Recurrences {
+  export type Recurrence = {
+    id: string;
+    amount: number;
+    description: string;
+    categoryId: string;
+    walletId: string;
+    frequency: RecurrenceFrequency;
+    /** Unix timestamp of the first occurrence */
+    startDate: number;
+    /** Unix timestamp of the last generated expense (tracks progress) */
+    lastGeneratedDate: number;
+    enabled: boolean;
+  };
+
+  export type PendingExpense = {
+    recurrenceId: string;
+    description: string;
+    amount: number;
+    categoryId: string;
+    walletId: string;
+    timestamp: number;
+  };
+
+  export function readAll(): Recurrence[] {
+    const storage = localStorage.getItem(STORE_RECURRENCES);
+    if (!storage) return [];
+    return JSON.parse(storage) as Recurrence[];
+  }
+
+  export function readById(id: string): Recurrence | undefined {
+    return readAll().find((r) => r.id === id);
+  }
+
+  export function write(data: Recurrence) {
+    const all = readAll();
+    const idx = all.findIndex((r) => r.id === data.id);
+    if (idx !== -1) {
+      all[idx] = data;
+    } else {
+      all.push(data);
+    }
+    localStorage.setItem(STORE_RECURRENCES, JSON.stringify(all));
+  }
+
+  export function remove(id: string) {
+    const filtered = readAll().filter((r) => r.id !== id);
+    localStorage.setItem(STORE_RECURRENCES, JSON.stringify(filtered));
+  }
+
+  export function writeAll(recurrences: Recurrence[]) {
+    localStorage.setItem(STORE_RECURRENCES, JSON.stringify(recurrences));
+  }
+
+  function advanceDate(t: LocalTime, freq: RecurrenceFrequency): LocalTime {
+    const copy = { ...t };
+    switch (freq) {
+      case RecurrenceFrequency.Daily:
+        copy.day += 1;
+        break;
+      case RecurrenceFrequency.Weekly:
+        copy.day += 7;
+        break;
+      case RecurrenceFrequency.Monthly:
+        copy.month += 1;
+        if (copy.month > 12) {
+          copy.month = 1;
+          copy.year += 1;
+        }
+        break;
+      case RecurrenceFrequency.Yearly:
+        copy.year += 1;
+        break;
+    }
+    // Normalize via Date to handle overflow (e.g. Jan 31 + 1 month)
+    const d = new Date(
+      copy.year,
+      copy.month - 1,
+      copy.day,
+      copy.hour,
+      copy.minute,
+      copy.second,
+    );
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour: d.getHours(),
+      minute: d.getMinutes(),
+      second: d.getSeconds(),
+      milli: 0,
+    };
+  }
+
+  /** Returns expenses that should have been generated but haven't yet. */
+  export function getPendingExpenses(): PendingExpense[] {
+    const now = Date.now();
+    const pending: PendingExpense[] = [];
+
+    for (const rec of readAll()) {
+      if (!rec.enabled) continue;
+
+      let cursor = rec.lastGeneratedDate
+        ? unixToLocalTime(rec.lastGeneratedDate)
+        : unixToLocalTime(rec.startDate);
+
+      // If lastGeneratedDate equals startDate or is set, start from next occurrence
+      if (rec.lastGeneratedDate >= rec.startDate) {
+        cursor = advanceDate(cursor, rec.frequency);
+      }
+
+      let ts = localTimeToUnix(cursor);
+      while (ts <= now) {
+        pending.push({
+          recurrenceId: rec.id,
+          description: rec.description,
+          amount: rec.amount,
+          categoryId: rec.categoryId,
+          walletId: rec.walletId,
+          timestamp: ts,
+        });
+        cursor = advanceDate(cursor, rec.frequency);
+        ts = localTimeToUnix(cursor);
+      }
+    }
+    return pending;
+  }
+
+  /** Write pending expenses into the Expenses store and update lastGeneratedDate. */
+  export function commitPendingExpenses(pending: PendingExpense[]) {
+    const byRecurrence = new Map<string, number>();
+    for (const p of pending) {
+      Expenses.write({
+        id: getUuid(),
+        amount: p.amount,
+        description: p.description,
+        categoryId: p.categoryId,
+        walletId: p.walletId,
+        timestamp: p.timestamp,
+      });
+      const prev = byRecurrence.get(p.recurrenceId) ?? 0;
+      if (p.timestamp > prev) {
+        byRecurrence.set(p.recurrenceId, p.timestamp);
+      }
+    }
+    const all = readAll();
+    for (const rec of all) {
+      const latest = byRecurrence.get(rec.id);
+      if (latest !== undefined) {
+        rec.lastGeneratedDate = latest;
+      }
+    }
+    writeAll(all);
+  }
+
+  /** Skip all pending: just advance lastGeneratedDate to now without creating expenses. */
+  export function skipPendingExpenses() {
+    const now = Date.now();
+    const all = readAll();
+    for (const rec of all) {
+      if (!rec.enabled) continue;
+      // Find the latest occurrence <= now
+      let cursor = rec.lastGeneratedDate
+        ? unixToLocalTime(rec.lastGeneratedDate)
+        : unixToLocalTime(rec.startDate);
+      if (rec.lastGeneratedDate >= rec.startDate) {
+        cursor = advanceDate(cursor, rec.frequency);
+      }
+      let lastValid = rec.lastGeneratedDate;
+      let ts = localTimeToUnix(cursor);
+      while (ts <= now) {
+        lastValid = ts;
+        cursor = advanceDate(cursor, rec.frequency);
+        ts = localTimeToUnix(cursor);
+      }
+      if (lastValid > rec.lastGeneratedDate) {
+        rec.lastGeneratedDate = lastValid;
+      }
+    }
+    writeAll(all);
+  }
+}

@@ -1,4 +1,3 @@
-import { ChakraProvider } from "@chakra-ui/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
@@ -7,6 +6,7 @@ import { oAuthSdk } from "./endpoints/oauth";
 import { CategoriesView } from "./pages/CategoriesView";
 import { ChartsView } from "./pages/ChartsView";
 import { DataTableView } from "./pages/DataTableView";
+import { RecurrenceView } from "./pages/RecurrenceView";
 import { SettingsView } from "./pages/SettingsView";
 import { WalletsView } from "./pages/WalletsView";
 import { STORE_VERIFIER } from "./utils/consts";
@@ -23,6 +23,10 @@ const router = createBrowserRouter([
   {
     path: "/wallets",
     element: <WalletsView />,
+  },
+  {
+    path: "/recurrence",
+    element: <RecurrenceView />,
   },
   {
     path: "/charts",
@@ -48,9 +52,7 @@ if (urlParams.get("authorizationCode")) {
 } else {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <ChakraProvider>
-        <RouterProvider router={router} />
-      </ChakraProvider>
+      <RouterProvider router={router} />
     </React.StrictMode>,
   );
 }

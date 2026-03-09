@@ -1,18 +1,7 @@
-import { ChevronDownIcon } from "@chakra-ui/icons";
-import {
-  Box,
-  Button,
-  Divider,
-  Heading,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Text,
-} from "@chakra-ui/react";
 import { ResponsivePie } from "@nivo/pie";
 import { useEffect, useMemo, useState } from "react";
-import { BiDoughnutChart, BiWallet } from "react-icons/bi";
+import { BiChevronDown, BiDoughnutChart, BiWallet } from "react-icons/bi";
+import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
 import { Categories } from "../localStorage/categories";
@@ -66,19 +55,16 @@ export function ChartsView() {
   }, []);
 
   useEffect(() => {
-    if (wallets.length) {
-      setWallet(wallets[0]);
-    }
-  }, [wallets]);
-
-  useEffect(() => {
+    if (!wallets.length) return;
     if (settings.defaultWallet) {
       const result = Wallets.readById(settings.defaultWallet);
       if (result) {
         setWallet(result);
+        return;
       }
     }
-  }, [settings]);
+    setWallet(wallets[0]);
+  }, [wallets, settings]);
 
   // get data
   const displayData = useMemo(() => {
@@ -176,54 +162,44 @@ export function ChartsView() {
         className="flex-row-space no-space mb-sm flex-wrap flex-wrap-third"
       >
         <LeftDrawer />
-        <Heading padding={0} margin={0} fontSize={24}>
-          Charts
-        </Heading>
+        <h2 className="page-title">Charts</h2>
         <div className="flex-row-space gap-sm no-space">
-          <Menu>
-            <MenuButton
-              as={Button}
-              leftIcon={<BiDoughnutChart />}
-              rightIcon={<ChevronDownIcon />}
-            >
-              {chartType}
-            </MenuButton>
-            <MenuList>
-              <MenuItem
+          <Dropdown
+            trigger={
+              <button type="button" className="btn">
+                <BiDoughnutChart />
+                {chartType}
+                <BiChevronDown />
+              </button>
+            }
+          >
+            <DropdownItem onClick={() => setChartType(ChartType.Pie)}>
+              {ChartType.Pie}
+            </DropdownItem>
+          </Dropdown>
+          <Dropdown
+            trigger={
+              <button type="button" className="btn">
+                <BiWallet />
+                {wallet?.name ?? ""}
+                <BiChevronDown />
+              </button>
+            }
+          >
+            {wallets.map((wallet) => (
+              <DropdownItem
+                key={wallet.id}
                 onClick={() => {
-                  setChartType(ChartType.Pie);
+                  const result = Wallets.readById(wallet.id);
+                  if (result) {
+                    setWallet(result);
+                  }
                 }}
               >
-                {ChartType.Pie}
-              </MenuItem>
-            </MenuList>
-          </Menu>
-          <Menu>
-            <MenuButton
-              as={Button}
-              leftIcon={<BiWallet />}
-              rightIcon={<ChevronDownIcon />}
-            >
-              {wallet?.name ?? ""}
-            </MenuButton>
-            <MenuList>
-              {wallets.map((wallet) => {
-                return (
-                  <MenuItem
-                    key={wallet.id}
-                    onClick={() => {
-                      const result = Wallets.readById(wallet.id);
-                      if (result) {
-                        setWallet(result);
-                      }
-                    }}
-                  >
-                    {wallet.name}
-                  </MenuItem>
-                );
-              })}
-            </MenuList>
-          </Menu>
+                {wallet.name}
+              </DropdownItem>
+            ))}
+          </Dropdown>
         </div>
       </div>
       <div id="second-lane" className="flex-row-space no-space gap-sm">
@@ -246,8 +222,8 @@ export function ChartsView() {
           }}
         />
       </div>
-      <Box margin={"0.5rem"} height={"fit-content"}>
-        <Text margin={0}>
+      <div style={{ margin: "0.5rem", height: "fit-content" }}>
+        <span style={{ margin: 0 }}>
           {"Total: "}
           {wallet?.currency && `${wallet.currency} `}
           {displayData
@@ -255,18 +231,22 @@ export function ChartsView() {
                 displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
               ) / 100
             : 0}
-        </Text>
-      </Box>
-      <Divider />
-      <Box
-        width={"100%"}
-        height={"100%"}
-        display={"flex"}
-        justifyContent={"center"}
-        overflow={"auto"}
+        </span>
+      </div>
+      <hr />
+      <div
+        className="scroll-area"
+        style={{ display: "flex", justifyContent: "center" }}
       >
         {chartType === ChartType.Pie && (
-          <Box minWidth={720} width={"100%"} height={"80vh"}>
+          <div
+            style={{
+              minWidth: 720,
+              width: "100%",
+              height: "80vh",
+              flexShrink: 0,
+            }}
+          >
             <ResponsivePie
               data={pieData}
               colors={pieData.map((data) => data.color)}
@@ -285,9 +265,9 @@ export function ChartsView() {
               arcLinkLabelsThickness={2}
               arcLinkLabelsColor={{ from: "color" }}
             />
-          </Box>
+          </div>
         )}
-      </Box>
+      </div>
     </PageLayout>
   );
 }
