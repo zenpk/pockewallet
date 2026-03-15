@@ -256,15 +256,15 @@ export function SettingsView() {
             marginBlock: "0.5rem",
           }}
         >
-          <label>Display Full Date</label>
+          <label>Display Concise Date</label>
           <label className="switch">
             <input
               type="checkbox"
-              checked={settings.displayFullDate}
+              checked={settings.displayConciseDate}
               onChange={(event) => {
                 setSettings((prev) => ({
                   ...prev,
-                  displayFullDate: event.target.checked,
+                  displayConciseDate: event.target.checked,
                 }));
               }}
             />
@@ -365,7 +365,7 @@ export function SettingsView() {
                   ? localTimeToString(
                       unixToLocalTime(pulledData.timestamp),
                       undefined,
-                      settings.displayFullDate,
+                      settings.displayConciseDate,
                     )
                   : "None"}
               </span>

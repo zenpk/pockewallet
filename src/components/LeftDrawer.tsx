@@ -4,9 +4,12 @@ import {
   BiDollarCircle,
   BiDoughnutChart,
   BiMenu,
+  BiMoneyWithdraw,
   BiRepeat,
+  BiTransfer,
   BiWallet,
 } from "react-icons/bi";
+import { Link } from "react-router-dom";
 import { useDisclosure } from "../hooks/useDisclosure";
 
 const linkStyle: React.CSSProperties = {
@@ -40,30 +43,38 @@ export function LeftDrawer() {
       <div className={`drawer-content${isOpen ? " open" : ""}`}>
         <div className="drawer-header">Menu</div>
         <div className="drawer-body">
-          <a href="/" style={linkStyle}>
+          <Link to="/" style={linkStyle} onClick={onClose}>
             <BiDollarCircle />
             <span>Expenses</span>
-          </a>
-          <a href="/categories" style={linkStyle}>
+          </Link>
+          <Link to="/categories" style={linkStyle} onClick={onClose}>
             <BiCustomize />
             <span>Categories</span>
-          </a>
-          <a href="/wallets" style={linkStyle}>
+          </Link>
+          <Link to="/wallets" style={linkStyle} onClick={onClose}>
             <BiWallet />
             <span>Wallets</span>
-          </a>
-          <a href="/recurrence" style={linkStyle}>
+          </Link>
+          <Link to="/recurrence" style={linkStyle} onClick={onClose}>
             <BiRepeat />
             <span>Recurrence</span>
-          </a>
-          <a href="/charts" style={linkStyle}>
+          </Link>
+          <Link to="/exchange" style={linkStyle} onClick={onClose}>
+            <BiMoneyWithdraw />
+            <span>Exchange</span>
+          </Link>
+          <Link to="/charts" style={linkStyle} onClick={onClose}>
             <BiDoughnutChart />
             <span>Charts</span>
-          </a>
-          <a href="/settings" style={linkStyle}>
+          </Link>
+          <Link to="/synonyms" style={linkStyle} onClick={onClose}>
+            <BiTransfer />
+            <span>Synonyms</span>
+          </Link>
+          <Link to="/settings" style={linkStyle} onClick={onClose}>
             <BiCog />
             <span>Settings</span>
-          </a>
+          </Link>
         </div>
       </div>
     </>

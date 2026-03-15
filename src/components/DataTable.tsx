@@ -57,7 +57,7 @@ export function DataTable({
           date: localTimeToString(
             unixToLocalTime(expense.timestamp),
             viewMode,
-            settings.displayFullDate,
+            settings.displayConciseDate,
           ),
           category:
             categories.find((category) => category.id === expense.categoryId) ??

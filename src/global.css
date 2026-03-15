@@ -124,7 +124,7 @@ body {
 hr {
   border: none;
   border-top: 1px solid #e2e8f0;
-  margin: 0.5rem 0;
+  margin: 0;
   flex-shrink: 0;
 }
 
@@ -172,6 +172,14 @@ select.input {
   font-size: 1rem;
   transition: border-color 0.15s, outline 0.15s;
   color-scheme: light;
+}
+
+input[type="datetime-local"].input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  line-height: 1.2;
 }
 
 .input:focus,
@@ -257,6 +265,17 @@ select.input {
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.badge-outline {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid #cbd5e0;
+  background-color: #f7fafc;
+  color: #2d3748;
 }
 
 /* Alert */

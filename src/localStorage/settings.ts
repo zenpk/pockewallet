@@ -4,7 +4,7 @@ export namespace Settings {
   export type Settings = {
     displayCurrency: boolean;
     displayDate: boolean;
-    displayFullDate: boolean;
+    displayConciseDate: boolean;
     combineDate: boolean;
     defaultWallet: string;
     defaultViewMode: ViewMode;
@@ -13,15 +13,16 @@ export namespace Settings {
   const defaultSettings: Settings = {
     displayCurrency: true,
     displayDate: true,
-    displayFullDate: false,
+    displayConciseDate: true,
     combineDate: true,
     defaultWallet: "",
     defaultViewMode: ViewMode.Daily,
   };
 
   export function read(): Settings {
-    const data = localStorage.getItem(KEY_SETTINGS);
-    return data ? JSON.parse(data) : defaultSettings;
+    const raw = localStorage.getItem(KEY_SETTINGS);
+    if (!raw) return defaultSettings;
+    return { ...defaultSettings, ...JSON.parse(raw) };
   }
 
   export function write(data: Settings) {

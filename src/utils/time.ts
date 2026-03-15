@@ -89,12 +89,12 @@ export function localTimeToUnix(t: LocalTime) {
 export function localTimeToString(
   t: LocalTime,
   viewMode?: ViewMode,
-  displayFullDate?: boolean,
+  displayConciseDate?: boolean,
 ) {
-  if (!displayFullDate && viewMode === ViewMode.Daily) {
+  if (displayConciseDate && viewMode === ViewMode.Daily) {
     return `${t.day.toString().padStart(2, "0")}`;
   }
-  if (displayFullDate) {
+  if (!displayConciseDate) {
     return `${t.year}-${t.month.toString().padStart(2, "0")}-${t.day
       .toString()
       .padStart(2, "0")} ${t.hour.toString().padStart(2, "0")}:${t.minute
@@ -133,4 +133,116 @@ export function getMaxDate(year: number, month: number) {
     maxDate[1] = 29;
   }
   return maxDate[month - 1];
+}
+
+export function getTimeRange(
+  viewMode: ViewMode,
+  year: number,
+  month: number,
+  customStartTime?: Date,
+  customEndTime?: Date,
+): { startTime: number; endTime: number } | undefined {
+  const today = genLocalTime();
+  let startTime: LocalTime;
+  let endTime: LocalTime;
+
+  switch (viewMode) {
+    case ViewMode.Today:
+      startTime = { ...today, hour: 0, minute: 0, second: 0, milli: 0 };
+      endTime = { ...today, hour: 23, minute: 59, second: 59, milli: 999 };
+      break;
+    case ViewMode.Daily:
+      startTime = {
+        year,
+        month,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      endTime = {
+        year: month + 1 > 12 ? year + 1 : year,
+        month: month + 1 > 12 ? 1 : month + 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      break;
+    case ViewMode.Monthly:
+      startTime = {
+        year,
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      endTime = {
+        year: year + 1,
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      break;
+    case ViewMode.Yearly:
+      startTime = {
+        year: 0,
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      endTime = {
+        year: 9999,
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      break;
+    case ViewMode.Custom: {
+      if (!customStartTime || !customEndTime) return undefined;
+      const nextDay = new Date(
+        customEndTime.getFullYear(),
+        customEndTime.getMonth(),
+        customEndTime.getDate() + 1,
+      );
+      startTime = {
+        year: customStartTime.getFullYear(),
+        month: customStartTime.getMonth() + 1,
+        day: customStartTime.getDate(),
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      endTime = {
+        year: nextDay.getFullYear(),
+        month: nextDay.getMonth() + 1,
+        day: nextDay.getDate(),
+        hour: 0,
+        minute: 0,
+        second: 0,
+        milli: 0,
+      };
+      break;
+    }
+    default:
+      return undefined;
+  }
+  return {
+    startTime: localTimeToUnix(startTime),
+    endTime: localTimeToUnix(endTime),
+  };
 }

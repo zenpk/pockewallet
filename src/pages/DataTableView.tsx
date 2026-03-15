@@ -2,36 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BiCalendar, BiChevronDown, BiPlus, BiWallet } from "react-icons/bi";
 import { AddRecordForm } from "../components/AddRecordForm";
 import { DataTable } from "../components/DataTable";
+import { DateRangeControls } from "../components/DateRangeControls";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { MonthlyYearlyTable } from "../components/MonthlyYearlyTable";
 import { PageLayout } from "../components/PageLayout";
 import { PendingRecurrences } from "../components/PendingRecurrences";
 import { useDisclosure } from "../hooks/useDisclosure";
+import { useViewMode } from "../hooks/useViewMode";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
 import { ViewMode } from "../utils/consts";
-import {
-  type LocalTime,
-  genLocalTime,
-  getDate,
-  getMaxDate,
-  getMonth,
-  getYear,
-  localDateToUtcDate,
-  localTimeToLocalDate,
-  localTimeToUnix,
-  newLocalDate,
-  unixToLocalTime,
-} from "../utils/time";
+import { genLocalTime, getDate, unixToLocalTime } from "../utils/time";
 
 export function DataTableView() {
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
-  const [year, setYear] = useState<number>(getYear());
-  const [month, setMonth] = useState<number>(getMonth());
+  const vm = useViewMode();
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
@@ -39,18 +27,6 @@ export function DataTableView() {
     Expenses.readAll(),
   );
   const [settings] = useState<Settings.Settings>(Settings.read());
-  const [customStartTime, setCustomStartTime] = useState<Date>(
-    localTimeToLocalDate({
-      year: new Date().getFullYear(),
-      month: new Date().getMonth() + 1,
-      day: 1,
-      hour: 0,
-      minute: 0,
-      second: 0,
-      milli: 0,
-    }),
-  );
-  const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
   const [searchString, setSearchString] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [maxAmount, setMaxAmount] = useState<number | null>(null);
@@ -71,7 +47,7 @@ export function DataTableView() {
 
   useEffect(() => {
     if (!wallets.length) return;
-    if (settings.defaultViewMode) setViewMode(settings.defaultViewMode);
+    if (settings.defaultViewMode) vm.setViewMode(settings.defaultViewMode);
     if (settings.defaultWallet) {
       const result = Wallets.readById(settings.defaultWallet);
       if (result) {
@@ -80,7 +56,7 @@ export function DataTableView() {
       }
     }
     setWallet(wallets[0]);
-  }, [wallets, settings]);
+  }, [wallets, settings, vm]);
 
   const walletId = wallet?.id;
 
@@ -88,156 +64,36 @@ export function DataTableView() {
     if (!expenses || !categories) {
       return;
     }
-    if (viewMode === ViewMode.Search) {
+    if (vm.viewMode === ViewMode.Search) {
       if (!searchString && !categoryId) {
         return;
       }
       return Expenses.search(expenses, walletId, categoryId, searchString);
     }
-    let startTime: LocalTime;
-    let endTime: LocalTime;
-    let maxDate: number;
-    const today = genLocalTime();
-    switch (viewMode) {
-      case ViewMode.Today:
-        startTime = {
-          year: today.year,
-          month: today.month,
-          day: today.day,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        endTime = {
-          year: today.year,
-          month: today.month,
-          day: today.day,
-          hour: 23,
-          minute: 59,
-          second: 59,
-          milli: 999,
-        };
-        break;
-      case ViewMode.Daily:
-        startTime = {
-          year: year,
-          month: month,
-          day: 1,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        endTime = {
-          year: month + 1 > 12 ? year + 1 : year,
-          month: month + 1 > 12 ? 1 : month + 1,
-          day: 1,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        break;
-      case ViewMode.Monthly:
-        startTime = {
-          year: year,
-          month: 1,
-          day: 1,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        endTime = {
-          year: year + 1,
-          month: 1,
-          day: 1,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        break;
-      case ViewMode.Custom:
-        maxDate = getMaxDate(
-          customStartTime.getFullYear(),
-          customStartTime.getMonth() + 1,
-        );
-        startTime = {
-          year: customStartTime.getFullYear(),
-          month: customStartTime.getMonth() + 1,
-          day: customStartTime.getDate(),
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        endTime = {
-          year:
-            customEndTime.getDate() + 1 > maxDate &&
-            customEndTime.getMonth() + 1 + 1 > 12
-              ? customEndTime.getFullYear() + 1
-              : customEndTime.getFullYear(),
-          month:
-            customEndTime.getDate() + 1 > maxDate
-              ? customEndTime.getMonth() + 1 + 1 > 12
-                ? 1
-                : customEndTime.getMonth() + 1 + 1
-              : customEndTime.getMonth() + 1,
-          day:
-            customEndTime.getDate() + 1 > maxDate
-              ? 1
-              : customEndTime.getDate() + 1,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        break;
-      default:
-        startTime = {
-          year: 0,
-          month: 0,
-          day: 0,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        endTime = {
-          year: 9999,
-          month: 0,
-          day: 0,
-          hour: 0,
-          minute: 0,
-          second: 0,
-          milli: 0,
-        };
-        break;
-    }
+    if (!vm.timeRange) return;
     const results = Expenses.readRange(
       expenses,
-      localTimeToUnix(startTime),
-      localTimeToUnix(endTime),
+      vm.timeRange.startTime,
+      vm.timeRange.endTime,
       walletId,
     );
-    if (viewMode === ViewMode.Custom && maxAmount !== null && maxAmount > 0) {
+    if (
+      vm.viewMode === ViewMode.Custom &&
+      maxAmount !== null &&
+      maxAmount > 0
+    ) {
       return results.filter((e) => e.amount <= maxAmount);
     }
     return results;
   }, [
-    viewMode,
+    vm.viewMode,
+    vm.timeRange,
     walletId,
     expenses,
     categories,
     categoryId,
     maxAmount,
     searchString,
-    year,
-    month,
-    customStartTime,
-    customEndTime,
   ]);
 
   const amountPerX = useMemo<{ name: string; amount: number } | null>(() => {
@@ -262,13 +118,13 @@ export function DataTableView() {
     let divide = 0;
     let name = "";
     const currentDate = genLocalTime();
-    switch (viewMode) {
+    switch (vm.viewMode) {
       case ViewMode.Today: {
         return null;
       }
       case ViewMode.Daily: {
         name = "day";
-        if (currentDate.year === year && currentDate.month === month) {
+        if (currentDate.year === vm.year && currentDate.month === vm.month) {
           divide = currentDate.day;
         } else {
           divide = maxDay - minDay + 1;
@@ -277,7 +133,7 @@ export function DataTableView() {
       }
       case ViewMode.Monthly: {
         name = "month";
-        if (currentDate.year === year) {
+        if (currentDate.year === vm.year) {
           divide = currentDate.month - minMonth + 1;
         } else {
           divide = maxMonth - minMonth + 1;
@@ -293,7 +149,7 @@ export function DataTableView() {
         name = "day";
         divide =
           Math.round(
-            (customEndTime.getTime() - customStartTime.getTime()) /
+            (vm.customEndTime.getTime() - vm.customStartTime.getTime()) /
               (1000 * 60 * 60 * 24),
           ) + 1;
         break;
@@ -309,7 +165,14 @@ export function DataTableView() {
       return null;
     }
     return { name: name, amount: Math.round((total / divide) * 100) / 100 };
-  }, [displayData, viewMode, month, year, customStartTime, customEndTime]);
+  }, [
+    displayData,
+    vm.viewMode,
+    vm.month,
+    vm.year,
+    vm.customStartTime,
+    vm.customEndTime,
+  ]);
 
   return (
     <PageLayout>
@@ -319,8 +182,8 @@ export function DataTableView() {
           categories={categories}
           wallet={wallet}
           setExpenses={setExpenses}
-          year={year}
-          month={month}
+          year={vm.year}
+          month={vm.month}
           day={getDate()}
           isOpen={isOpen}
           onOpen={onOpen}
@@ -346,27 +209,27 @@ export function DataTableView() {
             trigger={
               <button type="button" className="btn">
                 <BiCalendar />
-                {viewMode}
+                {vm.viewMode}
                 <BiChevronDown />
               </button>
             }
           >
-            <DropdownItem onClick={() => setViewMode(ViewMode.Today)}>
+            <DropdownItem onClick={() => vm.setViewMode(ViewMode.Today)}>
               {ViewMode.Today}
             </DropdownItem>
-            <DropdownItem onClick={() => setViewMode(ViewMode.Daily)}>
+            <DropdownItem onClick={() => vm.setViewMode(ViewMode.Daily)}>
               {ViewMode.Daily}
             </DropdownItem>
-            <DropdownItem onClick={() => setViewMode(ViewMode.Monthly)}>
+            <DropdownItem onClick={() => vm.setViewMode(ViewMode.Monthly)}>
               {ViewMode.Monthly}
             </DropdownItem>
-            <DropdownItem onClick={() => setViewMode(ViewMode.Yearly)}>
+            <DropdownItem onClick={() => vm.setViewMode(ViewMode.Yearly)}>
               {ViewMode.Yearly}
             </DropdownItem>
-            <DropdownItem onClick={() => setViewMode(ViewMode.Custom)}>
+            <DropdownItem onClick={() => vm.setViewMode(ViewMode.Custom)}>
               {ViewMode.Custom}
             </DropdownItem>
-            <DropdownItem onClick={() => setViewMode(ViewMode.Search)}>
+            <DropdownItem onClick={() => vm.setViewMode(ViewMode.Search)}>
               {ViewMode.Search}
             </DropdownItem>
           </Dropdown>
@@ -396,77 +259,20 @@ export function DataTableView() {
           </Dropdown>
         </div>
       </div>
-      <div
-        id="second-lane"
-        className="flex-row-space no-space gap-sm flex-wrap"
-      >
-        {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
-          <select
+      <DateRangeControls {...vm}>
+        {vm.viewMode === ViewMode.Custom && (
+          <input
+            type="number"
             className="input"
+            placeholder="Max amount"
+            value={maxAmount ?? ""}
             onChange={(event) => {
-              setYear(Number.parseInt(event.target.value));
+              const val = event.target.value;
+              setMaxAmount(val === "" ? null : Number.parseFloat(val));
             }}
-            value={year}
-          >
-            {Array.from({ length: 10 }, (_, i) => (
-              <option key={i.toString()} value={getYear() - i}>
-                {getYear() - i}
-              </option>
-            ))}
-          </select>
+          />
         )}
-        {viewMode === ViewMode.Daily && (
-          <select
-            className="input"
-            onChange={(event) => {
-              setMonth(Number.parseInt(event.target.value));
-            }}
-            value={month}
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i.toString()} value={i + 1}>
-                {i + 1}
-              </option>
-            ))}
-          </select>
-        )}
-        {viewMode === ViewMode.Custom && (
-          <>
-            <input
-              id="startDate"
-              type="date"
-              className="input"
-              value={localDateToUtcDate(customStartTime)
-                .toISOString()
-                .slice(0, 10)}
-              onChange={(event) => {
-                setCustomStartTime(newLocalDate(event.target.value));
-              }}
-            />
-            <input
-              id="endDate"
-              type="date"
-              className="input"
-              value={localDateToUtcDate(customEndTime)
-                .toISOString()
-                .slice(0, 10)}
-              onChange={(event) => {
-                setCustomEndTime(newLocalDate(event.target.value));
-              }}
-            />
-            <input
-              type="number"
-              className="input"
-              placeholder="Max amount"
-              value={maxAmount ?? ""}
-              onChange={(event) => {
-                const val = event.target.value;
-                setMaxAmount(val === "" ? null : Number.parseFloat(val));
-              }}
-            />
-          </>
-        )}
-        {viewMode === ViewMode.Search && (
+        {vm.viewMode === ViewMode.Search && (
           <>
             <input
               id="searchString"
@@ -493,39 +299,41 @@ export function DataTableView() {
             </select>
           </>
         )}
-      </div>
+      </DateRangeControls>
       {wallet && (
-        <div
-          style={{
-            margin: "0.5rem",
-            height: "fit-content",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ margin: 0 }}>
-            {"Total: "}
-            {wallet.currency && `${wallet.currency} `}
-            {displayData
-              ? Math.round(
-                  displayData.reduce((acc, cur) => acc + cur.amount, 0) * 100,
-                ) / 100
-              : 0}
-          </span>
-          {amountPerX && (
+        <>
+          <div
+            style={{
+              margin: "0.5rem",
+              height: "fit-content",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
             <span style={{ margin: 0 }}>
-              {`Per ${amountPerX.name}: `}
+              {"Total: "}
               {wallet.currency && `${wallet.currency} `}
-              {amountPerX.amount}
+              {displayData
+                ? Math.round(
+                    displayData.reduce((acc, cur) => acc + cur.amount, 0) * 100,
+                  ) / 100
+                : 0}
             </span>
-          )}
-        </div>
+            {amountPerX && (
+              <span style={{ margin: 0 }}>
+                {`Per ${amountPerX.name}: `}
+                {wallet.currency && `${wallet.currency} `}
+                {amountPerX.amount}
+              </span>
+            )}
+          </div>
+          <hr />
+        </>
       )}
-      <hr />
-      {(viewMode === ViewMode.Today ||
-        viewMode === ViewMode.Daily ||
-        viewMode === ViewMode.Custom ||
-        viewMode === ViewMode.Search) &&
+      {(vm.viewMode === ViewMode.Today ||
+        vm.viewMode === ViewMode.Daily ||
+        vm.viewMode === ViewMode.Custom ||
+        vm.viewMode === ViewMode.Search) &&
         displayData && (
           <DataTable
             displayData={displayData}
@@ -533,13 +341,13 @@ export function DataTableView() {
             wallet={wallet}
             wallets={wallets}
             setExpenses={setExpenses}
-            viewMode={viewMode}
+            viewMode={vm.viewMode}
           />
         )}
-      {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Yearly) &&
+      {(vm.viewMode === ViewMode.Monthly || vm.viewMode === ViewMode.Yearly) &&
         displayData && (
           <MonthlyYearlyTable
-            isMonthly={viewMode === ViewMode.Monthly}
+            isMonthly={vm.viewMode === ViewMode.Monthly}
             displayData={displayData}
             wallet={wallet}
           />

@@ -1,4 +1,5 @@
 import { STORE_EXPENSES } from "../utils/consts";
+import { Synonyms } from "./synonyms";
 
 export namespace Expenses {
   export type Expense = {
@@ -38,6 +39,8 @@ export namespace Expenses {
     categoryId?: string,
     searchString?: string,
   ) {
+    const searchTerms = searchString ? Synonyms.expandSearch(searchString) : [];
+
     return expenses.filter((expense) => {
       if (walletId && expense.walletId !== walletId) {
         return false;
@@ -45,8 +48,14 @@ export namespace Expenses {
       if (categoryId && expense.categoryId !== categoryId) {
         return false;
       }
-      if (searchString && !expense.description?.includes(searchString)) {
-        return false;
+      if (searchString) {
+        const desc = expense.description?.toLowerCase();
+        if (
+          !desc ||
+          !searchTerms.some((term) => desc.includes(term.toLowerCase()))
+        ) {
+          return false;
+        }
       }
       return true;
     });

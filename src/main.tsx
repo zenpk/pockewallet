@@ -7,7 +7,9 @@ import { CategoriesView } from "./pages/CategoriesView";
 import { ChartsView } from "./pages/ChartsView";
 import { DataTableView } from "./pages/DataTableView";
 import { RecurrenceView } from "./pages/RecurrenceView";
+import { ExchangeView } from "./pages/ExchangeView";
 import { SettingsView } from "./pages/SettingsView";
+import { SynonymsView } from "./pages/SynonymsView";
 import { WalletsView } from "./pages/WalletsView";
 import { STORE_VERIFIER } from "./utils/consts";
 
@@ -31,6 +33,14 @@ const router = createBrowserRouter([
   {
     path: "/charts",
     element: <ChartsView />,
+  },
+  {
+    path: "/exchange",
+    element: <ExchangeView />,
+  },
+  {
+    path: "/synonyms",
+    element: <SynonymsView />,
   },
   {
     path: "/settings",
