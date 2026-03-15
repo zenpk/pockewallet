@@ -178,6 +178,7 @@ export function ChartsView() {
             </DropdownItem>
           </Dropdown>
           <Dropdown
+            align="right"
             trigger={
               <button type="button" className="btn">
                 <BiWallet />

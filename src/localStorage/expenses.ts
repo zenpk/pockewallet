@@ -22,24 +22,24 @@ export namespace Expenses {
     expenses: Expense[],
     startTime: number,
     endTime: number,
-    walletId: string,
+    walletId?: string,
   ) {
     return expenses.filter(
       (expense) =>
         expense.timestamp >= startTime &&
         expense.timestamp < endTime &&
-        expense.walletId === walletId,
+        (!walletId || expense.walletId === walletId),
     );
   }
 
   export function search(
     expenses: Expense[],
-    walletId: string,
+    walletId?: string,
     categoryId?: string,
     searchString?: string,
   ) {
     return expenses.filter((expense) => {
-      if (expense.walletId !== walletId) {
+      if (walletId && expense.walletId !== walletId) {
         return false;
       }
       if (categoryId && expense.categoryId !== categoryId) {

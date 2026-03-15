@@ -22,6 +22,7 @@ export enum RecurrenceFrequency {
 }
 
 export enum ViewMode {
+  Today = "Today",
   Daily = "Daily",
   Monthly = "Monthly",
   Yearly = "Yearly",

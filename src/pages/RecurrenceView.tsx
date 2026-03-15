@@ -52,7 +52,7 @@ export function RecurrenceView() {
 
   return (
     <PageLayout>
-      {isOpen && (
+      {isOpen && wallet && (
         <AddRecurrenceForm
           categories={categories}
           wallet={wallet}
@@ -68,21 +68,25 @@ export function RecurrenceView() {
       >
         <div className="flex-row-space gap-sm no-space">
           <LeftDrawer />
-          <button type="button" className="btn btn-green" onClick={onOpen}>
-            <BiPlus />
-            Add
-          </button>
+          {wallet && (
+            <button type="button" className="btn btn-green" onClick={onOpen}>
+              <BiPlus />
+              Add
+            </button>
+          )}
         </div>
         <h2 className="page-title">Recurrence</h2>
         <Dropdown
+          align="right"
           trigger={
             <button type="button" className="btn">
               <BiWallet />
-              {wallet?.name ?? ""}
+              {wallet ? wallet.name : "All"}
               <BiChevronDown />
             </button>
           }
         >
+          <DropdownItem onClick={() => setWallet(null)}>All</DropdownItem>
           {wallets.map((w) => (
             <DropdownItem
               key={w.id}
@@ -324,6 +328,7 @@ function RecurrenceTable({
                   <td>{r.enabled ? "Yes" : "No"}</td>
                   <td>
                     <Dropdown
+                      align="right"
                       trigger={
                         <button
                           type="button"

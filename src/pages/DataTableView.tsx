@@ -1,33 +1,19 @@
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  BiCalendar,
-  BiChevronDown,
-  BiChevronUp,
-  BiMenu,
-  BiPlus,
-  BiWallet,
-} from "react-icons/bi";
-import { Autocomplete } from "../components/Autocomplete";
-import { Dialog } from "../components/Dialog";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BiCalendar, BiChevronDown, BiPlus, BiWallet } from "react-icons/bi";
+import { AddRecordForm } from "../components/AddRecordForm";
+import { DataTable } from "../components/DataTable";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
+import { MonthlyYearlyTable } from "../components/MonthlyYearlyTable";
 import { PageLayout } from "../components/PageLayout";
 import { PendingRecurrences } from "../components/PendingRecurrences";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
-import { RecentDescriptions } from "../localStorage/recentDescriptions";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import { SortMode, ViewMode } from "../utils/consts";
+import { ViewMode } from "../utils/consts";
 import {
   type LocalTime,
   genLocalTime,
@@ -36,14 +22,11 @@ import {
   getMonth,
   getYear,
   localDateToUtcDate,
-  localTimeToInputString,
   localTimeToLocalDate,
-  localTimeToString,
   localTimeToUnix,
   newLocalDate,
   unixToLocalTime,
 } from "../utils/time";
-import { getUuid } from "../utils/utils";
 
 export function DataTableView() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Monthly);
@@ -70,6 +53,7 @@ export function DataTableView() {
   const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
   const [searchString, setSearchString] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [maxAmount, setMaxAmount] = useState<number | null>(null);
   const [recurrenceChecked, setRecurrenceChecked] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -98,21 +82,43 @@ export function DataTableView() {
     setWallet(wallets[0]);
   }, [wallets, settings]);
 
-  // get data
+  const walletId = wallet?.id;
+
   const displayData = useMemo(() => {
-    if (!wallet || !expenses || !categories) {
+    if (!expenses || !categories) {
       return;
     }
     if (viewMode === ViewMode.Search) {
       if (!searchString && !categoryId) {
         return;
       }
-      return Expenses.search(expenses, wallet.id, categoryId, searchString);
+      return Expenses.search(expenses, walletId, categoryId, searchString);
     }
     let startTime: LocalTime;
     let endTime: LocalTime;
     let maxDate: number;
+    const today = genLocalTime();
     switch (viewMode) {
+      case ViewMode.Today:
+        startTime = {
+          year: today.year,
+          month: today.month,
+          day: today.day,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          milli: 0,
+        };
+        endTime = {
+          year: today.year,
+          month: today.month,
+          day: today.day,
+          hour: 23,
+          minute: 59,
+          second: 59,
+          milli: 999,
+        };
+        break;
       case ViewMode.Daily:
         startTime = {
           year: year,
@@ -210,18 +216,23 @@ export function DataTableView() {
         };
         break;
     }
-    return Expenses.readRange(
+    const results = Expenses.readRange(
       expenses,
       localTimeToUnix(startTime),
       localTimeToUnix(endTime),
-      wallet.id,
+      walletId,
     );
+    if (viewMode === ViewMode.Custom && maxAmount !== null && maxAmount > 0) {
+      return results.filter((e) => e.amount <= maxAmount);
+    }
+    return results;
   }, [
     viewMode,
-    wallet,
+    walletId,
     expenses,
     categories,
     categoryId,
+    maxAmount,
     searchString,
     year,
     month,
@@ -252,6 +263,9 @@ export function DataTableView() {
     let name = "";
     const currentDate = genLocalTime();
     switch (viewMode) {
+      case ViewMode.Today: {
+        return null;
+      }
       case ViewMode.Daily: {
         name = "day";
         if (currentDate.year === year && currentDate.month === month) {
@@ -300,7 +314,7 @@ export function DataTableView() {
   return (
     <PageLayout>
       {!recurrenceChecked && <PendingRecurrences onDone={onRecurrenceDone} />}
-      {isOpen && (
+      {isOpen && wallet && (
         <AddRecordForm
           categories={categories}
           wallet={wallet}
@@ -319,10 +333,12 @@ export function DataTableView() {
       >
         <div className="flex-row-space gap-sm no-space">
           <LeftDrawer />
-          <button type="button" className="btn btn-green" onClick={onOpen}>
-            <BiPlus />
-            Add
-          </button>
+          {wallet && (
+            <button type="button" className="btn btn-green" onClick={onOpen}>
+              <BiPlus />
+              Add
+            </button>
+          )}
         </div>
         <h2 className="page-title">Expenses</h2>
         <div className="flex-row-space gap-sm no-space">
@@ -335,6 +351,9 @@ export function DataTableView() {
               </button>
             }
           >
+            <DropdownItem onClick={() => setViewMode(ViewMode.Today)}>
+              {ViewMode.Today}
+            </DropdownItem>
             <DropdownItem onClick={() => setViewMode(ViewMode.Daily)}>
               {ViewMode.Daily}
             </DropdownItem>
@@ -353,31 +372,34 @@ export function DataTableView() {
           </Dropdown>
 
           <Dropdown
+            align="right"
             trigger={
               <button type="button" className="btn">
                 <BiWallet />
-                {wallet?.name ?? ""}
+                {wallet ? wallet.name : "All"}
                 <BiChevronDown />
               </button>
             }
           >
-            {wallets.map((wallet) => (
+            <DropdownItem onClick={() => setWallet(null)}>All</DropdownItem>
+            {wallets.map((w) => (
               <DropdownItem
-                key={wallet.id}
+                key={w.id}
                 onClick={() => {
-                  const result = Wallets.readById(wallet.id);
-                  if (result) {
-                    setWallet(result);
-                  }
+                  const result = Wallets.readById(w.id);
+                  if (result) setWallet(result);
                 }}
               >
-                {wallet.name}
+                {w.name}
               </DropdownItem>
             ))}
           </Dropdown>
         </div>
       </div>
-      <div id="second-lane" className="flex-row-space no-space gap-sm">
+      <div
+        id="second-lane"
+        className="flex-row-space no-space gap-sm flex-wrap"
+      >
         {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
           <select
             className="input"
@@ -432,6 +454,16 @@ export function DataTableView() {
                 setCustomEndTime(newLocalDate(event.target.value));
               }}
             />
+            <input
+              type="number"
+              className="input"
+              placeholder="Max amount"
+              value={maxAmount ?? ""}
+              onChange={(event) => {
+                const val = event.target.value;
+                setMaxAmount(val === "" ? null : Number.parseFloat(val));
+              }}
+            />
           </>
         )}
         {viewMode === ViewMode.Search && (
@@ -462,33 +494,36 @@ export function DataTableView() {
           </>
         )}
       </div>
-      <div
-        style={{
-          margin: "0.5rem",
-          height: "fit-content",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <span style={{ margin: 0 }}>
-          {"Total: "}
-          {wallet?.currency && `${wallet.currency} `}
-          {displayData
-            ? Math.round(
-                displayData?.reduce((acc, cur) => acc + cur.amount, 0) * 100,
-              ) / 100
-            : 0}
-        </span>
-        {amountPerX && (
+      {wallet && (
+        <div
+          style={{
+            margin: "0.5rem",
+            height: "fit-content",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
           <span style={{ margin: 0 }}>
-            {`Per ${amountPerX.name}: `}
-            {wallet?.currency && `${wallet.currency} `}
-            {amountPerX.amount}
+            {"Total: "}
+            {wallet.currency && `${wallet.currency} `}
+            {displayData
+              ? Math.round(
+                  displayData.reduce((acc, cur) => acc + cur.amount, 0) * 100,
+                ) / 100
+              : 0}
           </span>
-        )}
-      </div>
+          {amountPerX && (
+            <span style={{ margin: 0 }}>
+              {`Per ${amountPerX.name}: `}
+              {wallet.currency && `${wallet.currency} `}
+              {amountPerX.amount}
+            </span>
+          )}
+        </div>
+      )}
       <hr />
-      {(viewMode === ViewMode.Daily ||
+      {(viewMode === ViewMode.Today ||
+        viewMode === ViewMode.Daily ||
         viewMode === ViewMode.Custom ||
         viewMode === ViewMode.Search) &&
         displayData && (
@@ -496,6 +531,7 @@ export function DataTableView() {
             displayData={displayData}
             categories={categories}
             wallet={wallet}
+            wallets={wallets}
             setExpenses={setExpenses}
             viewMode={viewMode}
           />
@@ -509,426 +545,5 @@ export function DataTableView() {
           />
         )}
     </PageLayout>
-  );
-}
-
-function AddRecordForm({
-  categories,
-  wallet,
-  setExpenses,
-  year,
-  month,
-  day,
-  isOpen,
-  onOpen,
-  onClose,
-  idValue,
-}: {
-  categories: Categories.Category[];
-  wallet: Wallets.Wallet | null;
-  setExpenses: Dispatch<SetStateAction<Expenses.Expense[]>>;
-  year: number;
-  month: number;
-  day: number;
-  isOpen: boolean;
-  onOpen: () => void;
-  onClose: () => void;
-  idValue?: string;
-}) {
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [amount, setAmount] = useState<number>(0);
-  const [amountError, setAmountError] = useState<boolean>(false);
-  const [date, setDate] = useState<number>(
-    localTimeToUnix(genLocalTime(year, month, day)),
-  );
-  const [description, setDescription] = useState<string>("");
-  const [recentDescriptions] = useState(() => RecentDescriptions.read());
-
-  useEffect(() => {
-    setDate(localTimeToUnix(genLocalTime(year, month, day)));
-  }, [year, month, day]);
-
-  useEffect(() => {
-    if (idValue) {
-      const result = Expenses.readById(idValue);
-      if (result) {
-        setCategoryId(result.categoryId);
-        setAmount(result.amount);
-        setDate(result.timestamp);
-        setDescription(result.description ?? "");
-      } else {
-        console.warn("No expense found with id: ", idValue);
-      }
-    }
-  }, [idValue]);
-
-  useEffect(() => {
-    if (categories.length && !idValue) {
-      setCategoryId(categories[0].id);
-    }
-  }, [categories, idValue]);
-
-  return (
-    <Dialog
-      submit={() => {
-        if (!amount || Number.isNaN(Number(amount))) {
-          setAmountError(true);
-          return false;
-        }
-        if (!wallet || !date) {
-          return false;
-        }
-        Expenses.write({
-          id: idValue || getUuid(),
-          amount: amount || 0,
-          categoryId: categoryId,
-          walletId: wallet.id,
-          timestamp: date,
-          description: description || "",
-        });
-        RecentDescriptions.add(description);
-        setExpenses(Expenses.readAll());
-        return true;
-      }}
-      title={"Add Record"}
-      isOpen={isOpen}
-      onOpen={onOpen}
-      onClose={onClose}
-    >
-      <div className="form-group">
-        <label>Date</label>
-        <input
-          className="input"
-          type="datetime-local"
-          value={localTimeToInputString(unixToLocalTime(date))}
-          onChange={(event) => {
-            setDate(new Date(event.target.value).getTime());
-          }}
-        />
-      </div>
-      <div className="form-group">
-        <label>Category</label>
-        <select
-          className="input"
-          value={categoryId}
-          onChange={(event) => {
-            setCategoryId(event.target.value);
-          }}
-        >
-          {categories.map((category) => {
-            return (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-      <div className="form-group">
-        <label>Description (Optional)</label>
-        <Autocomplete
-          className="input"
-          value={description}
-          onChange={setDescription}
-          suggestions={recentDescriptions}
-        />
-      </div>
-      <div className="form-group">
-        <label>Amount</label>
-        <input
-          className="input"
-          type="number"
-          value={amount || ""}
-          onChange={(event) => {
-            setAmount(Number.parseFloat(event?.target?.value));
-          }}
-        />
-        {amountError && <span className="form-error">Invalid amount</span>}
-      </div>
-    </Dialog>
-  );
-}
-
-type DisplayData = {
-  id: string;
-  date: string;
-  category: Categories.Category;
-  description: string;
-  amount: number;
-};
-
-function DataTable({
-  displayData: expenses,
-  categories,
-  wallet,
-  setExpenses,
-  viewMode,
-}: {
-  displayData: Expenses.Expense[];
-  categories: Categories.Category[];
-  wallet: Wallets.Wallet | null;
-  setExpenses: Dispatch<SetStateAction<Expenses.Expense[]>>;
-  viewMode: ViewMode;
-}) {
-  const [data, setData] = useState<DisplayData[]>([]);
-  const [settings] = useState<Settings.Settings>(Settings.read());
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [currentExpenseId, setCurrentExpenseId] = useState<string>(
-    expenses[0]?.id ?? "",
-  );
-  const [sortMode, setSortMode] = useState<SortMode>(SortMode.DateDesc);
-  const dateSet = new Set();
-
-  const transformed = useMemo(() => {
-    function transformData(expenses: Expenses.Expense[]): DisplayData[] {
-      return expenses.map((expense, i) => {
-        return {
-          id: expense.id ?? i.toString(),
-          date: localTimeToString(
-            unixToLocalTime(expense.timestamp),
-            viewMode,
-            settings.displayFullDate,
-          ),
-          category:
-            categories.find((category) => category.id === expense.categoryId) ??
-            Categories.defaultCategory,
-          description: expense.description ?? "",
-          amount: expense.amount,
-        };
-      });
-    }
-
-    expenses.sort((a, b) =>
-      Number(a.timestamp) > Number(b.timestamp) ? -1 : 1,
-    );
-    const dateDesc = transformData(expenses);
-    expenses.sort((a, b) =>
-      Number(a.timestamp) < Number(b.timestamp) ? -1 : 1,
-    );
-    const dateAsc = transformData(expenses);
-    expenses.sort((a, b) => (Number(a.amount) > Number(b.amount) ? -1 : 1));
-    const amountDesc = transformData(expenses);
-    expenses.sort((a, b) => (Number(a.amount) < Number(b.amount) ? -1 : 1));
-    const amountAsc = transformData(expenses);
-    return {
-      dateDesc,
-      dateAsc,
-      amountDesc,
-      amountAsc,
-    };
-  }, [expenses, viewMode, categories, settings]);
-
-  useEffect(() => {
-    dateSet.clear();
-    switch (sortMode) {
-      case SortMode.DateDesc:
-        setData(transformed.dateDesc);
-        break;
-      case SortMode.DateAsc:
-        setData(transformed.dateAsc);
-        break;
-      case SortMode.AmountDesc:
-        setData(transformed.amountDesc);
-        break;
-      case SortMode.AmountAsc:
-        setData(transformed.amountAsc);
-        break;
-      default:
-        break;
-    }
-  }, [dateSet, sortMode, transformed]);
-
-  return (
-    <>
-      {isOpen && (
-        <AddRecordForm
-          categories={categories}
-          wallet={wallet}
-          setExpenses={setExpenses}
-          year={0}
-          month={0}
-          day={0}
-          isOpen={isOpen}
-          onOpen={onOpen}
-          onClose={onClose}
-          idValue={currentExpenseId}
-        />
-      )}
-      <div className="scroll-area">
-        <table>
-          <thead>
-            <tr>
-              {settings.displayDate && (
-                <th
-                  onClick={() => {
-                    setSortMode(
-                      sortMode === SortMode.DateDesc
-                        ? SortMode.DateAsc
-                        : SortMode.DateDesc,
-                    );
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center" }}>
-                    {viewMode === ViewMode.Monthly ? "Month" : "Date"}
-                    {sortMode === SortMode.DateDesc && <BiChevronDown />}
-                    {sortMode === SortMode.DateAsc && <BiChevronUp />}
-                  </span>
-                </th>
-              )}
-              <th>Description</th>
-              <th
-                onClick={() => {
-                  setSortMode(
-                    sortMode === SortMode.AmountDesc
-                      ? SortMode.AmountAsc
-                      : SortMode.AmountDesc,
-                  );
-                }}
-                style={{ cursor: "pointer" }}
-              >
-                <span style={{ display: "inline-flex", alignItems: "center" }}>
-                  Amount
-                  {sortMode === SortMode.AmountDesc && <BiChevronDown />}
-                  {sortMode === SortMode.AmountAsc && <BiChevronUp />}
-                </span>
-              </th>
-              <th>Category</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((d) => {
-              const hasTheDate = dateSet.has(d.date);
-              if (
-                settings.combineDate &&
-                (sortMode === SortMode.DateAsc ||
-                  sortMode === SortMode.DateDesc)
-              ) {
-                dateSet.add(d.date);
-              }
-              return (
-                <tr key={d.id}>
-                  {settings.displayDate && <td>{!hasTheDate ? d.date : ""}</td>}
-                  <td>{d.description}</td>
-                  <td>
-                    {settings.displayCurrency &&
-                      wallet?.currency &&
-                      `${wallet.currency} `}
-                    {Math.round(d.amount * 100) / 100}
-                  </td>
-                  <td>
-                    <span
-                      className="badge"
-                      style={{ backgroundColor: d.category.color }}
-                    >
-                      {d.category.name}
-                    </span>
-                  </td>
-                  <td>
-                    <Dropdown
-                      trigger={
-                        <button
-                          type="button"
-                          className="btn-icon"
-                          aria-label="Options"
-                        >
-                          <BiMenu />
-                        </button>
-                      }
-                    >
-                      <DropdownItem
-                        onClick={() => {
-                          setCurrentExpenseId(d.id);
-                          onOpen();
-                        }}
-                      >
-                        Edit
-                      </DropdownItem>
-                      <DropdownItem
-                        style={{ color: "#ee0000" }}
-                        onClick={() => {
-                          Expenses.remove(d.id);
-                          setExpenses(Expenses.readAll());
-                        }}
-                      >
-                        Delete
-                      </DropdownItem>
-                    </Dropdown>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-type MonthlyYearlyData = {
-  date: string;
-  amount: number;
-};
-
-function MonthlyYearlyTable({
-  isMonthly,
-  displayData,
-  wallet,
-}: {
-  isMonthly?: boolean;
-  displayData: Expenses.Expense[];
-  wallet: Wallets.Wallet | null;
-}) {
-  const [settings] = useState<Settings.Settings>(Settings.read());
-
-  const data = useMemo<MonthlyYearlyData[]>(() => {
-    // @ts-ignore
-    const grouped = Object.groupBy(displayData, (expense) => {
-      const time = unixToLocalTime(expense.timestamp);
-      return isMonthly ? time.month : time.year;
-    });
-    return Array.from(Object.keys(grouped))
-      .sort((a, b) => {
-        return Number(a) < Number(b) ? -1 : 1;
-      })
-      .map((key: string) => {
-        return {
-          date: key,
-          amount: grouped[key].reduce(
-            (acc: number, cur: Pick<Expenses.Expense, "amount">) =>
-              acc + cur.amount,
-            0,
-          ),
-        } as MonthlyYearlyData;
-      });
-  }, [displayData, isMonthly]);
-
-  return (
-    <div className="scroll-area" style={{ paddingTop: "0.5rem" }}>
-      <table>
-        <thead>
-          <tr>
-            <th>{isMonthly ? "Month" : "Year"}</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => {
-            return (
-              <tr key={d.date}>
-                <td>{d.date}</td>
-                <td>
-                  {settings.displayCurrency &&
-                    wallet?.currency &&
-                    `${wallet.currency} `}
-                  {Math.round(d.amount * 100) / 100}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
   );
 }

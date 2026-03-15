@@ -26,6 +26,7 @@ export function Autocomplete({
       )
     : suggestions;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: need to clear active index when value changes
   useEffect(() => {
     setActiveIndex(-1);
   }, [value]);

@@ -3,9 +3,10 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 type DropdownProps = {
   trigger: ReactNode;
   children: ReactNode;
+  align?: "left" | "right";
 };
 
-export function Dropdown({ trigger, children }: DropdownProps) {
+export function Dropdown({ trigger, children, align }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -24,7 +25,10 @@ export function Dropdown({ trigger, children }: DropdownProps) {
     <div className="dropdown" ref={ref}>
       <div onClick={() => setOpen((prev) => !prev)}>{trigger}</div>
       {open && (
-        <div className="dropdown-menu" onClick={() => setOpen(false)}>
+        <div
+          className={`dropdown-menu${align === "right" ? " dropdown-menu-right" : ""}`}
+          onClick={() => setOpen(false)}
+        >
           {children}
         </div>
       )}
