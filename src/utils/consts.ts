@@ -1,4 +1,5 @@
 import type { Categories } from "../localStorage/categories";
+import type { Exchanges } from "../localStorage/exchanges";
 import type { Expenses } from "../localStorage/expenses";
 import type { Recurrences } from "../localStorage/recurrences";
 import type { Synonyms } from "../localStorage/synonyms";
@@ -47,8 +48,10 @@ export type SyncData = {
   expenses: Expenses.Expense[];
   categories: Categories.Category[];
   wallets: Wallets.Wallet[];
-  recurrences?: Recurrences.Recurrence[];
-  synonyms?: Synonyms.SynonymGroup[];
+  recurrences: Recurrences.Recurrence[];
+  synonyms: Synonyms.SynonymGroup[];
+  exchanges: Exchanges.Exchange[];
+  recentDescriptions: string[];
   settings: string;
   timestamp: number;
   userId: string;

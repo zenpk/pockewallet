@@ -5,13 +5,21 @@ import { PageLayout } from "../components/PageLayout";
 import { oAuthSdk } from "../endpoints/oauth";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
+import { Exchanges } from "../localStorage/exchanges";
 import { Expenses } from "../localStorage/expenses";
+import { RecentDescriptions } from "../localStorage/recentDescriptions";
 import { Recurrences } from "../localStorage/recurrences";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
+import { Synonyms } from "../localStorage/synonyms";
 import { Wallets } from "../localStorage/wallets";
 import { fetchJson, postJson } from "../utils/api";
-import { STORE_VERIFIER, type SyncData, ViewMode } from "../utils/consts";
+import {
+  STORE_DESCRIPTIONS,
+  STORE_VERIFIER,
+  type SyncData,
+  ViewMode,
+} from "../utils/consts";
 import { getUnix, localTimeToString, unixToLocalTime } from "../utils/time";
 import { getIdFromCookie } from "../utils/utils";
 
@@ -95,6 +103,9 @@ export function SettingsView() {
       categories: Categories.readAll(),
       wallets: wallets,
       recurrences: Recurrences.readAll(),
+      synonyms: Synonyms.readAll(),
+      exchanges: Exchanges.readAll(),
+      recentDescriptions: RecentDescriptions.read(),
       settings: JSON.stringify(settings),
       timestamp: getUnix(),
       userId: id.uuid,
@@ -124,10 +135,16 @@ export function SettingsView() {
       );
       if (!data) return false;
       setPulledData(data);
-      if (data.expenses) Expenses.writeAll(data.expenses);
-      if (data.categories) Categories.writeAll(data.categories);
-      if (data.wallets) Wallets.writeAll(data.wallets);
-      if (data.recurrences) Recurrences.writeAll(data.recurrences);
+      Expenses.writeAll(data.expenses ?? []);
+      Categories.writeAll(data.categories ?? []);
+      Wallets.writeAll(data.wallets ?? []);
+      Recurrences.writeAll(data.recurrences ?? []);
+      Synonyms.writeAll(data.synonyms ?? []);
+      Exchanges.writeAll(data.exchanges ?? []);
+      localStorage.setItem(
+        STORE_DESCRIPTIONS,
+        JSON.stringify(data.recentDescriptions ?? []),
+      );
       if (data.settings) {
         Settings.write(JSON.parse(data.settings) as Settings.Settings);
       }
