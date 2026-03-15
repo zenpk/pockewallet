@@ -14,6 +14,7 @@ import {
   BiPlus,
   BiWallet,
 } from "react-icons/bi";
+import { Autocomplete } from "../components/Autocomplete";
 import { Dialog } from "../components/Dialog";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
@@ -22,6 +23,7 @@ import { PendingRecurrences } from "../components/PendingRecurrences";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
+import { RecentDescriptions } from "../localStorage/recentDescriptions";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
@@ -540,6 +542,7 @@ function AddRecordForm({
     localTimeToUnix(genLocalTime(year, month, day)),
   );
   const [description, setDescription] = useState<string>("");
+  const [recentDescriptions] = useState(() => RecentDescriptions.read());
 
   useEffect(() => {
     setDate(localTimeToUnix(genLocalTime(year, month, day)));
@@ -583,6 +586,7 @@ function AddRecordForm({
           timestamp: date,
           description: description || "",
         });
+        RecentDescriptions.add(description);
         setExpenses(Expenses.readAll());
         return true;
       }}
@@ -622,13 +626,11 @@ function AddRecordForm({
       </div>
       <div className="form-group">
         <label>Description (Optional)</label>
-        <input
+        <Autocomplete
           className="input"
-          type="text"
           value={description}
-          onChange={(event) => {
-            setDescription(event.target.value);
-          }}
+          onChange={setDescription}
+          suggestions={recentDescriptions}
         />
       </div>
       <div className="form-group">
