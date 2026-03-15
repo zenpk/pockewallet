@@ -1,9 +1,10 @@
-const KEY = "RecentDescriptions";
+import { STORE_DESCRIPTIONS } from "../utils/consts";
+
 const MAX = 100;
 
 export namespace RecentDescriptions {
   export function read(): string[] {
-    const data = localStorage.getItem(KEY);
+    const data = localStorage.getItem(STORE_DESCRIPTIONS);
     return data ? JSON.parse(data) : [];
   }
 
@@ -13,6 +14,6 @@ export namespace RecentDescriptions {
     const list = read().filter((d) => d !== trimmed);
     list.unshift(trimmed);
     if (list.length > MAX) list.length = MAX;
-    localStorage.setItem(KEY, JSON.stringify(list));
+    localStorage.setItem(STORE_DESCRIPTIONS, JSON.stringify(list));
   }
 }

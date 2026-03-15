@@ -21,19 +21,46 @@ export function PendingRecurrences({ onDone }: Props) {
       return;
     }
     setPending(items);
-    ref.current?.showModal();
   }, [onDone]);
+
+  useEffect(() => {
+    if (pending.length > 0 && ref.current && !ref.current.open) {
+      ref.current.showModal();
+    }
+  }, [pending]);
 
   if (pending.length === 0) return null;
 
-  function handleAdd() {
+  function handleSkipRow(index: number) {
+    const item = pending[index];
+    Recurrences.skipSinglePendingExpense(item);
+    const next = pending.filter((_, i) => i !== index);
+    if (next.length === 0) {
+      ref.current?.close();
+      onDone();
+    } else {
+      setPending(next);
+    }
+  }
+
+  function handleAddRow(index: number) {
+    Recurrences.commitPendingExpenses([pending[index]]);
+    const next = pending.filter((_, i) => i !== index);
+    if (next.length === 0) {
+      ref.current?.close();
+      onDone();
+    } else {
+      setPending(next);
+    }
+  }
+
+  function handleAddAll() {
     Recurrences.commitPendingExpenses(pending);
     ref.current?.close();
     onDone();
   }
 
-  function handleSkip() {
-    Recurrences.skipPendingExpenses();
+  function handleLater() {
     ref.current?.close();
     onDone();
   }
@@ -41,9 +68,9 @@ export function PendingRecurrences({ onDone }: Props) {
   return (
     <dialog
       ref={ref}
-      onClose={handleSkip}
+      onClose={handleLater}
       onClick={(e) => {
-        if (e.target === ref.current) handleSkip();
+        if (e.target === ref.current) handleLater();
       }}
       style={{ maxWidth: "36rem" }}
     >
@@ -52,7 +79,7 @@ export function PendingRecurrences({ onDone }: Props) {
         <button
           type="button"
           className="dialog-close-btn"
-          onClick={handleSkip}
+          onClick={handleLater}
           aria-label="Close"
         >
           &#x2715;
@@ -61,7 +88,7 @@ export function PendingRecurrences({ onDone }: Props) {
       <div className="dialog-body">
         <p style={{ margin: "0 0 0.75rem", color: "#4a5568" }}>
           {pending.length} recurring expense{pending.length > 1 ? "s" : ""} need
-          to be added. Would you like to add them?
+          to be added.
         </p>
         <div
           style={{
@@ -79,6 +106,7 @@ export function PendingRecurrences({ onDone }: Props) {
                 <th>Amount</th>
                 <th>Category</th>
                 <th>Wallet</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -104,6 +132,32 @@ export function PendingRecurrences({ onDone }: Props) {
                       </span>
                     </td>
                     <td>{wal?.name ?? "-"}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <div style={{ display: "flex", gap: "0.375rem" }}>
+                        <button
+                          type="button"
+                          className="btn btn-gray"
+                          style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.85rem",
+                          }}
+                          onClick={() => handleSkipRow(i)}
+                        >
+                          Skip
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-blue"
+                          style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.85rem",
+                          }}
+                          onClick={() => handleAddRow(i)}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -112,10 +166,10 @@ export function PendingRecurrences({ onDone }: Props) {
         </div>
       </div>
       <div className="dialog-footer">
-        <button type="button" className="btn btn-gray" onClick={handleSkip}>
-          Skip
+        <button type="button" className="btn btn-gray" onClick={handleLater}>
+          Later
         </button>
-        <button type="button" className="btn btn-blue" onClick={handleAdd}>
+        <button type="button" className="btn btn-blue" onClick={handleAddAll}>
           Add All
         </button>
       </div>

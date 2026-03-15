@@ -18,7 +18,7 @@ import { Wallets } from "../localStorage/wallets";
 import { ViewMode } from "../utils/consts";
 import { genLocalTime, getDate, unixToLocalTime } from "../utils/time";
 
-export function DataTableView() {
+export function ExpensesView() {
   const vm = useViewMode();
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
@@ -56,7 +56,7 @@ export function DataTableView() {
       }
     }
     setWallet(wallets[0]);
-  }, [wallets, settings, vm]);
+  }, [wallets, settings, vm.setViewMode]);
 
   const walletId = wallet?.id;
 

@@ -138,8 +138,6 @@ function AddRecurrenceForm({
   const [startDate, setStartDate] = useState<number>(
     localTimeToUnix(genLocalTime()),
   );
-  const [enabled, setEnabled] = useState(true);
-
   useEffect(() => {
     if (idValue) {
       const rec = Recurrences.readById(idValue);
@@ -149,7 +147,6 @@ function AddRecurrenceForm({
         setCategoryId(rec.categoryId);
         setFrequency(rec.frequency);
         setStartDate(rec.startDate);
-        setEnabled(rec.enabled);
       }
     }
   }, [idValue]);
@@ -176,7 +173,6 @@ function AddRecurrenceForm({
           frequency,
           startDate,
           lastGeneratedDate: existing?.lastGeneratedDate ?? 0,
-          enabled,
         });
         setRecurrences(Recurrences.readAll());
         return true;
@@ -242,24 +238,6 @@ function AddRecurrenceForm({
           onChange={(e) => setStartDate(new Date(e.target.value).getTime())}
         />
       </div>
-      <div
-        className="form-group"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <label style={{ marginBottom: 0 }}>Enabled</label>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => setEnabled(e.target.checked)}
-          />
-          <span className="switch-slider" />
-        </label>
-      </div>
     </Dialog>
   );
 }
@@ -303,7 +281,6 @@ function RecurrenceTable({
               <th>Amount</th>
               <th>Category</th>
               <th>Frequency</th>
-              <th>Enabled</th>
               <th />
             </tr>
           </thead>
@@ -325,7 +302,6 @@ function RecurrenceTable({
                     </span>
                   </td>
                   <td>{r.frequency}</td>
-                  <td>{r.enabled ? "Yes" : "No"}</td>
                   <td>
                     <Dropdown
                       align="right"

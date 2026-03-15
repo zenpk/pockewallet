@@ -19,7 +19,6 @@ export namespace Recurrences {
     startDate: number;
     /** Unix timestamp of the last generated expense (tracks progress) */
     lastGeneratedDate: number;
-    enabled: boolean;
   };
 
   export type PendingExpense = {
@@ -107,8 +106,6 @@ export namespace Recurrences {
     const pending: PendingExpense[] = [];
 
     for (const rec of readAll()) {
-      if (!rec.enabled) continue;
-
       let cursor = rec.lastGeneratedDate
         ? unixToLocalTime(rec.lastGeneratedDate)
         : unixToLocalTime(rec.startDate);
@@ -167,8 +164,6 @@ export namespace Recurrences {
     const now = Date.now();
     const all = readAll();
     for (const rec of all) {
-      if (!rec.enabled) continue;
-      // Find the latest occurrence <= now
       let cursor = rec.lastGeneratedDate
         ? unixToLocalTime(rec.lastGeneratedDate)
         : unixToLocalTime(rec.startDate);
@@ -185,6 +180,16 @@ export namespace Recurrences {
       if (lastValid > rec.lastGeneratedDate) {
         rec.lastGeneratedDate = lastValid;
       }
+    }
+    writeAll(all);
+  }
+
+  /** Skip a single pending expense: advance lastGeneratedDate for its recurrence. */
+  export function skipSinglePendingExpense(item: PendingExpense) {
+    const all = readAll();
+    const rec = all.find((r) => r.id === item.recurrenceId);
+    if (rec && item.timestamp > rec.lastGeneratedDate) {
+      rec.lastGeneratedDate = item.timestamp;
     }
     writeAll(all);
   }

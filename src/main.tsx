@@ -5,7 +5,7 @@ import "./global.css";
 import { oAuthSdk } from "./endpoints/oauth";
 import { CategoriesView } from "./pages/CategoriesView";
 import { ChartsView } from "./pages/ChartsView";
-import { DataTableView } from "./pages/DataTableView";
+import { ExpensesView } from "./pages/ExpensesView";
 import { RecurrenceView } from "./pages/RecurrenceView";
 import { ExchangeView } from "./pages/ExchangeView";
 import { SettingsView } from "./pages/SettingsView";
@@ -16,7 +16,7 @@ import { STORE_VERIFIER } from "./utils/consts";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <DataTableView />,
+    element: <ExpensesView />,
   },
   {
     path: "/categories",

@@ -12,10 +12,11 @@ export const STORE_CATEGORIES = "Categories";
 export const STORE_WALLETS = "Wallets";
 export const STORE_VERIFIER = "Verifier";
 
-export const KEY_SETTINGS = "Settings";
+export const STORE_SETTINGS = "Settings";
 export const STORE_RECURRENCES = "Recurrences";
 export const STORE_SYNONYMS = "Synonyms";
 export const STORE_EXCHANGES = "Exchanges";
+export const STORE_DESCRIPTIONS = "RecentDescriptions";
 
 export enum RecurrenceFrequency {
   Daily = "Daily",

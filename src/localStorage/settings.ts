@@ -1,4 +1,4 @@
-import { KEY_SETTINGS, ViewMode } from "../utils/consts";
+import { STORE_SETTINGS, ViewMode } from "../utils/consts";
 
 export namespace Settings {
   export type Settings = {
@@ -20,12 +20,12 @@ export namespace Settings {
   };
 
   export function read(): Settings {
-    const raw = localStorage.getItem(KEY_SETTINGS);
+    const raw = localStorage.getItem(STORE_SETTINGS);
     if (!raw) return defaultSettings;
     return { ...defaultSettings, ...JSON.parse(raw) };
   }
 
   export function write(data: Settings) {
-    localStorage.setItem(KEY_SETTINGS, JSON.stringify(data));
+    localStorage.setItem(STORE_SETTINGS, JSON.stringify(data));
   }
 }
