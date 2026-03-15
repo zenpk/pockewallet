@@ -52,23 +52,26 @@ export function RecurrenceView() {
 
   return (
     <PageLayout>
-      <div id="first-lane" className="flex-row-space no-space mb-sm">
+      {isOpen && (
+        <AddRecurrenceForm
+          categories={categories}
+          wallet={wallet}
+          setRecurrences={setRecurrences}
+          isOpen={isOpen}
+          onOpen={onOpen}
+          onClose={onClose}
+        />
+      )}
+      <div
+        id="first-lane"
+        className="flex-row-space no-space mb-sm flex-wrap flex-wrap-third"
+      >
         <div className="flex-row-space gap-sm no-space">
           <LeftDrawer />
           <button type="button" className="btn btn-green" onClick={onOpen}>
             <BiPlus />
             Add
           </button>
-          {isOpen && (
-            <AddRecurrenceForm
-              categories={categories}
-              wallet={wallet}
-              setRecurrences={setRecurrences}
-              isOpen={isOpen}
-              onOpen={onOpen}
-              onClose={onClose}
-            />
-          )}
         </div>
         <h2 className="page-title">Recurrence</h2>
         <Dropdown

@@ -298,29 +298,29 @@ export function DataTableView() {
   return (
     <PageLayout>
       {!recurrenceChecked && <PendingRecurrences onDone={onRecurrenceDone} />}
+      {isOpen && (
+        <AddRecordForm
+          categories={categories}
+          wallet={wallet}
+          setExpenses={setExpenses}
+          year={year}
+          month={month}
+          day={getDate()}
+          isOpen={isOpen}
+          onOpen={onOpen}
+          onClose={onClose}
+        />
+      )}
       <div
         id="first-lane"
         className="flex-row-space no-space mb-sm flex-wrap flex-wrap-third"
       >
-        <div className={"flex-row-space gap-sm no-space"}>
+        <div className="flex-row-space gap-sm no-space">
           <LeftDrawer />
           <button type="button" className="btn btn-green" onClick={onOpen}>
             <BiPlus />
             Add
           </button>
-          {isOpen && (
-            <AddRecordForm
-              categories={categories}
-              wallet={wallet}
-              setExpenses={setExpenses}
-              year={year}
-              month={month}
-              day={getDate()}
-              isOpen={isOpen}
-              onOpen={onOpen}
-              onClose={onClose}
-            />
-          )}
         </div>
         <h2 className="page-title">Expenses</h2>
         <div className="flex-row-space gap-sm no-space">
@@ -765,17 +765,13 @@ function DataTable({
                         : SortMode.DateDesc,
                     );
                   }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    cursor: "pointer",
-                  }}
+                  style={{ cursor: "pointer" }}
                 >
-                  <span>
+                  <span style={{ display: "inline-flex", alignItems: "center" }}>
                     {viewMode === ViewMode.Monthly ? "Month" : "Date"}
+                    {sortMode === SortMode.DateDesc && <BiChevronDown />}
+                    {sortMode === SortMode.DateAsc && <BiChevronUp />}
                   </span>
-                  {sortMode === SortMode.DateDesc && <BiChevronDown />}
-                  {sortMode === SortMode.DateAsc && <BiChevronUp />}
                 </th>
               )}
               <th>Description</th>
@@ -787,15 +783,13 @@ function DataTable({
                       : SortMode.AmountDesc,
                   );
                 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
+                style={{ cursor: "pointer" }}
               >
-                <span>Amount</span>
-                {sortMode === SortMode.AmountDesc && <BiChevronDown />}
-                {sortMode === SortMode.AmountAsc && <BiChevronUp />}
+                <span style={{ display: "inline-flex", alignItems: "center" }}>
+                  Amount
+                  {sortMode === SortMode.AmountDesc && <BiChevronDown />}
+                  {sortMode === SortMode.AmountAsc && <BiChevronUp />}
+                </span>
               </th>
               <th>Category</th>
               <th />
