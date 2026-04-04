@@ -1,4 +1,5 @@
 import { STORE_SYNONYMS } from "../utils/consts";
+import { normalizeForSearch } from "../utils/utils";
 
 export namespace Synonyms {
   export type SynonymGroup = {
@@ -39,23 +40,40 @@ export namespace Synonyms {
   }
 
   /**
-   * Given a search string, returns all synonym words that should also match.
-   * E.g. if group = ["abc", "abcd", "acb"] and searchString = "abc",
-   * returns ["abc", "abcd", "acb"].
+   * Recursively expand a search string through synonym groups.
+   * Uses substring matching (kana-insensitive): if a search term is a
+   * substring of any word in a group, all words from that group become
+   * additional search terms. Repeats until no new terms are found.
    */
   export function expandSearch(searchString: string): string[] {
-    const lower = searchString.toLowerCase();
     const groups = readAll();
     const result = new Set<string>();
     result.add(searchString);
-    for (const group of groups) {
-      const lowerWords = group.words.map((w) => w.toLowerCase());
-      if (lowerWords.includes(lower)) {
-        for (const word of group.words) {
-          result.add(word);
+
+    const processedGroupIds = new Set<string>();
+    const queue: string[] = [searchString];
+
+    while (queue.length > 0) {
+      const term = queue.shift()!;
+      const normalizedTerm = normalizeForSearch(term);
+
+      for (const group of groups) {
+        if (processedGroupIds.has(group.id)) continue;
+        const matches = group.words.some((w) =>
+          normalizeForSearch(w).includes(normalizedTerm),
+        );
+        if (matches) {
+          processedGroupIds.add(group.id);
+          for (const word of group.words) {
+            if (!result.has(word)) {
+              result.add(word);
+              queue.push(word);
+            }
+          }
         }
       }
     }
+
     return Array.from(result);
   }
 }

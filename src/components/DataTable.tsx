@@ -47,6 +47,13 @@ export function DataTable({
     expenses[0]?.id ?? "",
   );
   const [sortMode, setSortMode] = useState<SortMode>(SortMode.DateDesc);
+
+  const editWallet = useMemo(() => {
+    if (wallet) return wallet;
+    const expense = expenses.find((e) => e.id === currentExpenseId);
+    if (!expense) return null;
+    return wallets.find((w) => w.id === expense.walletId) ?? null;
+  }, [wallet, currentExpenseId, expenses, wallets]);
   const dateSet = new Set();
 
   const transformed = useMemo(() => {
@@ -115,7 +122,7 @@ export function DataTable({
       {isOpen && (
         <AddRecordForm
           categories={categories}
-          wallet={wallet}
+          wallet={editWallet}
           setExpenses={setExpenses}
           year={0}
           month={0}

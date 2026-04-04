@@ -1,4 +1,5 @@
 import {
+  BiCloud,
   BiCog,
   BiCustomize,
   BiDollarCircle,
@@ -76,7 +77,7 @@ export function LeftDrawer() {
             <span>Settings</span>
           </Link>
           <Link to="/sync" style={linkStyle} onClick={onClose}>
-            <BiTransfer />
+            <BiCloud />
             <span>Sync</span>
           </Link>
         </div>

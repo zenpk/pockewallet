@@ -51,7 +51,7 @@ export type SyncData = {
   recurrences: Recurrences.Recurrence[];
   synonyms: Synonyms.SynonymGroup[];
   exchanges: Exchanges.Exchange[];
-  recentDescriptions: string[];
+  recentDescriptions: unknown;
   settings: string;
   timestamp: number;
   userId: string;
@@ -59,4 +59,5 @@ export type SyncData = {
 
 export enum ChartType {
   Pie = "Pie",
+  Bar = "Bar",
 }

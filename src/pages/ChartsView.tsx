@@ -1,3 +1,5 @@
+import type { BarDatum } from "@nivo/bar";
+import { ResponsiveBar } from "@nivo/bar";
 import { ResponsivePie } from "@nivo/pie";
 import { useEffect, useMemo, useState } from "react";
 import { BiChevronDown, BiDoughnutChart, BiWallet } from "react-icons/bi";
@@ -26,12 +28,19 @@ type PieData = {
   color: string;
 };
 
+type BarData = BarDatum & {
+  category: string;
+  amount: number;
+  color: string;
+};
+
 export function ChartsView() {
   const [chartType, setChartType] = useState<ChartType>(ChartType.Pie);
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [pieData, setPieData] = useState<PieData[]>([]);
+  const [barData, setBarData] = useState<BarData[]>([]);
   const [settings] = useState<Settings.Settings>(Settings.read());
   const [customStartTime, setCustomStartTime] = useState<Date>(
     localTimeToLocalDate({
@@ -150,6 +159,33 @@ export function ChartsView() {
         setPieData(data);
         break;
       }
+      case ChartType.Bar: {
+        const dataMap = new Map<string, BarData>();
+        for (const exp of displayData) {
+          const cat =
+            categories.find((category) => category.id === exp.categoryId) ??
+            Categories.defaultCategory;
+          let value = dataMap.get(cat.name);
+          if (!value) {
+            value = {
+              category: cat.name,
+              amount: exp.amount,
+              color: cat.color,
+            };
+          } else {
+            value.amount += exp.amount;
+          }
+          dataMap.set(cat.name, value);
+        }
+        const data: BarData[] = [];
+        for (const value of dataMap.values()) {
+          value.amount = Math.round(value.amount * 100) / 100;
+          data.push(value);
+        }
+        data.sort((a, b) => b.amount - a.amount);
+        setBarData(data);
+        break;
+      }
       default:
         break;
     }
@@ -175,6 +211,9 @@ export function ChartsView() {
           >
             <DropdownItem onClick={() => setChartType(ChartType.Pie)}>
               {ChartType.Pie}
+            </DropdownItem>
+            <DropdownItem onClick={() => setChartType(ChartType.Bar)}>
+              {ChartType.Bar}
             </DropdownItem>
           </Dropdown>
           <Dropdown
@@ -265,6 +304,35 @@ export function ChartsView() {
               arcLinkLabelsSkipAngle={10}
               arcLinkLabelsThickness={2}
               arcLinkLabelsColor={{ from: "color" }}
+            />
+          </div>
+        )}
+        {chartType === ChartType.Bar && (
+          <div
+            style={{
+              minWidth: 720,
+              width: "100%",
+              height: "80vh",
+              flexShrink: 0,
+            }}
+          >
+            <ResponsiveBar
+              data={barData}
+              keys={["amount"]}
+              indexBy="category"
+              colors={({ data }) => (data as BarData).color}
+              margin={{ top: 40, right: 40, bottom: 80, left: 80 }}
+              padding={0.3}
+              borderWidth={1}
+              borderColor={{
+                from: "color",
+                modifiers: [["darker", 0.2]],
+              }}
+              axisBottom={{
+                tickRotation: -35,
+              }}
+              labelSkipWidth={20}
+              labelSkipHeight={20}
             />
           </div>
         )}

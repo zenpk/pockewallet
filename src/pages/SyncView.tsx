@@ -7,7 +7,6 @@ import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Exchanges } from "../localStorage/exchanges";
 import { Expenses } from "../localStorage/expenses";
-import { RecentDescriptions } from "../localStorage/recentDescriptions";
 import { Recurrences } from "../localStorage/recurrences";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
@@ -80,7 +79,9 @@ export function SyncView() {
       recurrences: Recurrences.readAll(),
       synonyms: Synonyms.readAll(),
       exchanges: Exchanges.readAll(),
-      recentDescriptions: RecentDescriptions.read(),
+      recentDescriptions: JSON.parse(
+        localStorage.getItem(STORE_DESCRIPTIONS) ?? "{}",
+      ),
       settings: JSON.stringify(Settings.read()),
       timestamp: getUnix(),
       userId: id.uuid,
@@ -105,7 +106,9 @@ export function SyncView() {
     if (!id) return false;
     setLoading(true);
     try {
-      const data = await fetchJson<SyncData>(`/api/wallet/pull?userId=${id.uuid}`);
+      const data = await fetchJson<SyncData>(
+        `/api/wallet/pull?userId=${id.uuid}`,
+      );
       if (!data) return false;
       setPulledData(data);
       Expenses.writeAll(data.expenses ?? []);
@@ -116,7 +119,7 @@ export function SyncView() {
       Exchanges.writeAll(data.exchanges ?? []);
       localStorage.setItem(
         STORE_DESCRIPTIONS,
-        JSON.stringify(data.recentDescriptions ?? []),
+        JSON.stringify(data.recentDescriptions ?? {}),
       );
       if (data.settings) {
         Settings.write(JSON.parse(data.settings) as Settings.Settings);
@@ -178,7 +181,9 @@ export function SyncView() {
           )}
           {displaySpinner && <span className="spinner" />}
           {displayPushPull && (
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <div
+              style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
+            >
               <span>
                 Last Sync:{" "}
                 {pulledData?.timestamp

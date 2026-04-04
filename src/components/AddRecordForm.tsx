@@ -1,8 +1,10 @@
 import {
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useEffect,
   useId,
+  useMemo,
   useState,
 } from "react";
 import type { Categories } from "../localStorage/categories";
@@ -49,7 +51,26 @@ export function AddRecordForm({
     localTimeToUnix(genLocalTime(year, month, day)),
   );
   const [description, setDescription] = useState<string>("");
-  const [recentDescriptions] = useState(() => RecentDescriptions.read());
+  const [recentEntries] = useState(() => RecentDescriptions.read(wallet?.id));
+  const suggestions = useMemo(
+    () => recentEntries.map((e) => e.description),
+    [recentEntries],
+  );
+  const descToCategoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of recentEntries) {
+      if (e.categoryId) map.set(e.description, e.categoryId);
+    }
+    return map;
+  }, [recentEntries]);
+  const handleDescriptionChange = useCallback(
+    (value: string) => {
+      setDescription(value);
+      const cat = descToCategoryMap.get(value);
+      if (cat) setCategoryId(cat);
+    },
+    [descToCategoryMap],
+  );
   const idPrefix = useId();
   const dateInputId = `${idPrefix}-date`;
   const categoryInputId = `${idPrefix}-category`;
@@ -98,7 +119,7 @@ export function AddRecordForm({
           timestamp: date,
           description: description || "",
         });
-        RecentDescriptions.add(description);
+        RecentDescriptions.add(wallet.id, description, categoryId);
         setExpenses(Expenses.readAll());
         return true;
       }}
@@ -144,8 +165,8 @@ export function AddRecordForm({
           id={descriptionInputId}
           className="input"
           value={description}
-          onChange={setDescription}
-          suggestions={recentDescriptions}
+          onChange={handleDescriptionChange}
+          suggestions={suggestions}
         />
       </div>
       <div className="form-group">

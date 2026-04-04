@@ -1,5 +1,19 @@
 import { COOKIE_ID } from "./consts";
 
+/** Normalize katakana to hiragana and lowercase for kana-insensitive comparison */
+export function normalizeForSearch(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[\u30A1-\u30F6]/g, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0x60),
+    )
+    .replace(/\u30F7/g, "\u308F") // ヷ → わ
+    .replace(/\u30F8/g, "\u3090") // ヸ → ゐ
+    .replace(/\u30F9/g, "\u3091") // ヹ → ゑ
+    .replace(/\u30FA/g, "\u3092") // ヺ → を
+    .replace(/\u30FC/g, "\u30FC"); // ー stays
+}
+
 export function getUuid() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;

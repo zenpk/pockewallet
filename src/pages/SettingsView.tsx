@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
-import { Link } from "react-router-dom";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
+import { RecentDescriptions } from "../localStorage/recentDescriptions";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
@@ -11,6 +11,7 @@ export function SettingsView() {
   const [settings, setSettings] = useState<Settings.Settings>(Settings.read());
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
   const [saved, setSaved] = useState<boolean>(false);
+  const [cleared, setCleared] = useState<boolean>(false);
   const idPrefix = useId();
   const defaultWalletInputId = `${idPrefix}-default-wallet`;
   const defaultViewModeInputId = `${idPrefix}-default-view-mode`;
@@ -126,7 +127,9 @@ export function SettingsView() {
             marginBlock: "0.5rem",
           }}
         >
-          <label htmlFor={displayConciseDateInputId}>Display Concise Date</label>
+          <label htmlFor={displayConciseDateInputId}>
+            Display Concise Date
+          </label>
           <label className="switch">
             <input
               id={displayConciseDateInputId}
@@ -192,16 +195,41 @@ export function SettingsView() {
         </div>
         <div
           style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             marginBlock: "0.5rem",
+          }}
+        >
+          <span>Clear Recent Descriptions</span>
+          <button
+            type="button"
+            className="btn btn-red"
+            onClick={() => {
+              RecentDescriptions.clear();
+              setCleared(true);
+              setTimeout(() => {
+                setCleared(false);
+              }, 2000);
+            }}
+          >
+            Clear
+          </button>
+        </div>
+        {cleared && (
+          <div className="alert-success" style={{ marginBlock: "0.5rem" }}>
+            Recent descriptions cleared!
+          </div>
+        )}
+        <div
+          style={{
+            marginBlock: "1.5rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
             gap: "0.5rem",
           }}
         >
-          <Link to="/sync" className="btn">
-            Open Sync
-          </Link>
           <button
             type="button"
             className="btn btn-blue"

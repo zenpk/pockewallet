@@ -1,4 +1,5 @@
 import { STORE_EXPENSES } from "../utils/consts";
+import { normalizeForSearch } from "../utils/utils";
 import { Synonyms } from "./synonyms";
 
 export namespace Expenses {
@@ -40,6 +41,7 @@ export namespace Expenses {
     searchString?: string,
   ) {
     const searchTerms = searchString ? Synonyms.expandSearch(searchString) : [];
+    const normalizedTerms = searchTerms.map(normalizeForSearch);
 
     return expenses.filter((expense) => {
       if (walletId && expense.walletId !== walletId) {
@@ -49,11 +51,10 @@ export namespace Expenses {
         return false;
       }
       if (searchString) {
-        const desc = expense.description?.toLowerCase();
-        if (
-          !desc ||
-          !searchTerms.some((term) => desc.includes(term.toLowerCase()))
-        ) {
+        const desc = expense.description
+          ? normalizeForSearch(expense.description)
+          : undefined;
+        if (!desc || !normalizedTerms.some((term) => desc.includes(term))) {
           return false;
         }
       }

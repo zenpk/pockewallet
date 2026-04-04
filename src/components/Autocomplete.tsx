@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Synonyms } from "../localStorage/synonyms";
+import { normalizeForSearch } from "../utils/utils";
 
 type Props = {
   id?: string;
@@ -22,11 +24,16 @@ export function Autocomplete({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filtered = value.trim()
-    ? suggestions.filter((s) =>
-        s.toLowerCase().includes(value.trim().toLowerCase()),
-      )
-    : suggestions;
+  const filtered = useMemo(() => {
+    const trimmed = value.trim();
+    if (!trimmed) return suggestions;
+    const expandedTerms = Synonyms.expandSearch(trimmed);
+    const normalizedTerms = expandedTerms.map(normalizeForSearch);
+    return suggestions.filter((s) => {
+      const norm = normalizeForSearch(s);
+      return normalizedTerms.some((term) => norm.includes(term));
+    });
+  }, [value, suggestions]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: need to clear active index when value changes
   useEffect(() => {
