@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   suggestions: string[];
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function Autocomplete({
+  id,
   value,
   onChange,
   suggestions,
@@ -82,6 +84,7 @@ export function Autocomplete({
   return (
     <div ref={wrapperRef} className="autocomplete">
       <input
+        id={id}
         className={className}
         type="text"
         value={value}

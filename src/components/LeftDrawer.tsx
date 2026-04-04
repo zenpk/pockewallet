@@ -75,6 +75,10 @@ export function LeftDrawer() {
             <BiCog />
             <span>Settings</span>
           </Link>
+          <Link to="/sync" style={linkStyle} onClick={onClose}>
+            <BiTransfer />
+            <span>Sync</span>
+          </Link>
         </div>
       </div>
     </>

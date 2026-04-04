@@ -191,6 +191,12 @@ select.input:focus {
 
 select.input {
   cursor: pointer;
+  color: #1a202c;
+  -webkit-text-fill-color: #1a202c;
+}
+
+select.input option {
+  color: #1a202c;
 }
 
 /* Buttons */

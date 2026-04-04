@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 import { BiMenu, BiPlus } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
@@ -63,6 +69,9 @@ function AddRecordForm({
   const [nameError, setNameError] = useState<boolean>(false);
   const [color, setColor] = useState<string>("");
   const [deletable, setDeletable] = useState<boolean>(true);
+  const idPrefix = useId();
+  const nameInputId = `${idPrefix}-name`;
+  const colorInputId = `${idPrefix}-color`;
 
   useEffect(() => {
     if (idValue) {
@@ -99,8 +108,9 @@ function AddRecordForm({
       onClose={onClose}
     >
       <div className="form-group">
-        <label>Name</label>
+        <label htmlFor={nameInputId}>Name</label>
         <input
+          id={nameInputId}
           className="input"
           type="text"
           value={name}
@@ -113,8 +123,9 @@ function AddRecordForm({
         )}
       </div>
       <div className="form-group">
-        <label>Color (Leave empty for random)</label>
+        <label htmlFor={colorInputId}>Color (Leave empty for random)</label>
         <input
+          id={colorInputId}
           className="input"
           type="text"
           value={color}

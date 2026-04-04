@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 import type { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { RecentDescriptions } from "../localStorage/recentDescriptions";
@@ -44,6 +50,11 @@ export function AddRecordForm({
   );
   const [description, setDescription] = useState<string>("");
   const [recentDescriptions] = useState(() => RecentDescriptions.read());
+  const idPrefix = useId();
+  const dateInputId = `${idPrefix}-date`;
+  const categoryInputId = `${idPrefix}-category`;
+  const descriptionInputId = `${idPrefix}-description`;
+  const amountInputId = `${idPrefix}-amount`;
 
   useEffect(() => {
     setDate(localTimeToUnix(genLocalTime(year, month, day)));
@@ -97,8 +108,9 @@ export function AddRecordForm({
       onClose={onClose}
     >
       <div className="form-group">
-        <label>Date</label>
+        <label htmlFor={dateInputId}>Date</label>
         <input
+          id={dateInputId}
           className="input"
           type="datetime-local"
           value={localTimeToInputString(unixToLocalTime(date))}
@@ -108,8 +120,9 @@ export function AddRecordForm({
         />
       </div>
       <div className="form-group">
-        <label>Category</label>
+        <label htmlFor={categoryInputId}>Category</label>
         <select
+          id={categoryInputId}
           className="input"
           value={categoryId}
           onChange={(event) => {
@@ -126,8 +139,9 @@ export function AddRecordForm({
         </select>
       </div>
       <div className="form-group">
-        <label>Description (Optional)</label>
+        <label htmlFor={descriptionInputId}>Description (Optional)</label>
         <Autocomplete
+          id={descriptionInputId}
           className="input"
           value={description}
           onChange={setDescription}
@@ -135,8 +149,9 @@ export function AddRecordForm({
         />
       </div>
       <div className="form-group">
-        <label>Amount</label>
+        <label htmlFor={amountInputId}>Amount</label>
         <input
+          id={amountInputId}
           className="input"
           type="number"
           value={amount || ""}

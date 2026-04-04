@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 import { BiChevronDown, BiMenu, BiPlus, BiWallet } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
@@ -138,6 +144,12 @@ function AddRecurrenceForm({
   const [startDate, setStartDate] = useState<number>(
     localTimeToUnix(genLocalTime()),
   );
+  const idPrefix = useId();
+  const descriptionInputId = `${idPrefix}-description`;
+  const amountInputId = `${idPrefix}-amount`;
+  const categoryInputId = `${idPrefix}-category`;
+  const frequencyInputId = `${idPrefix}-frequency`;
+  const startDateInputId = `${idPrefix}-start-date`;
   useEffect(() => {
     if (idValue) {
       const rec = Recurrences.readById(idValue);
@@ -183,8 +195,9 @@ function AddRecurrenceForm({
       onClose={onClose}
     >
       <div className="form-group">
-        <label>Description</label>
+        <label htmlFor={descriptionInputId}>Description</label>
         <input
+          id={descriptionInputId}
           className="input"
           type="text"
           value={description}
@@ -192,8 +205,9 @@ function AddRecurrenceForm({
         />
       </div>
       <div className="form-group">
-        <label>Amount</label>
+        <label htmlFor={amountInputId}>Amount</label>
         <input
+          id={amountInputId}
           className="input"
           type="number"
           value={amount || ""}
@@ -202,8 +216,9 @@ function AddRecurrenceForm({
         {amountError && <span className="form-error">Invalid amount</span>}
       </div>
       <div className="form-group">
-        <label>Category</label>
+        <label htmlFor={categoryInputId}>Category</label>
         <select
+          id={categoryInputId}
           className="input"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
@@ -216,8 +231,9 @@ function AddRecurrenceForm({
         </select>
       </div>
       <div className="form-group">
-        <label>Frequency</label>
+        <label htmlFor={frequencyInputId}>Frequency</label>
         <select
+          id={frequencyInputId}
           className="input"
           value={frequency}
           onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
@@ -230,8 +246,9 @@ function AddRecurrenceForm({
         </select>
       </div>
       <div className="form-group">
-        <label>Start Date</label>
+        <label htmlFor={startDateInputId}>Start Date</label>
         <input
+          id={startDateInputId}
           className="input"
           type="datetime-local"
           value={localTimeToInputString(unixToLocalTime(startDate))}

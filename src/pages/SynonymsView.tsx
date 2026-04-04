@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 import { BiMenu, BiPlus, BiX } from "react-icons/bi";
 import { Dialog } from "../components/Dialog";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
@@ -58,6 +64,8 @@ function SynonymForm({
 }) {
   const [words, setWords] = useState<string[]>([""]);
   const [error, setError] = useState<string>("");
+  const idPrefix = useId();
+  const wordsInputId = `${idPrefix}-word-0`;
 
   useEffect(() => {
     if (idValue) {
@@ -109,7 +117,7 @@ function SynonymForm({
       onClose={onClose}
     >
       <div className="form-group">
-        <label>Words (at least 2)</label>
+        <label htmlFor={wordsInputId}>Words (at least 2)</label>
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
         >
@@ -119,6 +127,7 @@ function SynonymForm({
               style={{ display: "flex", gap: "0.3rem", alignItems: "center" }}
             >
               <input
+                id={index === 0 ? wordsInputId : undefined}
                 className="input"
                 type="text"
                 value={word}

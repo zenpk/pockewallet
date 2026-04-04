@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useId,
+  useState,
+} from "react";
 import { Exchanges } from "../localStorage/exchanges";
 import type { Wallets } from "../localStorage/wallets";
 import {
@@ -35,6 +41,13 @@ export function AddExchangeForm({
   const [sameWalletError, setSameWalletError] = useState(false);
   const [date, setDate] = useState<number>(localTimeToUnix(genLocalTime()));
   const [description, setDescription] = useState("");
+  const idPrefix = useId();
+  const dateInputId = `${idPrefix}-date`;
+  const fromWalletInputId = `${idPrefix}-from-wallet`;
+  const fromAmountInputId = `${idPrefix}-from-amount`;
+  const toWalletInputId = `${idPrefix}-to-wallet`;
+  const toAmountInputId = `${idPrefix}-to-amount`;
+  const descriptionInputId = `${idPrefix}-description`;
 
   useEffect(() => {
     if (idValue) {
@@ -91,8 +104,9 @@ export function AddExchangeForm({
       onClose={onClose}
     >
       <div className="form-group">
-        <label>Date</label>
+        <label htmlFor={dateInputId}>Date</label>
         <input
+          id={dateInputId}
           className="input"
           type="datetime-local"
           value={localTimeToInputString(unixToLocalTime(date))}
@@ -100,8 +114,9 @@ export function AddExchangeForm({
         />
       </div>
       <div className="form-group">
-        <label>From Wallet</label>
+        <label htmlFor={fromWalletInputId}>From Wallet</label>
         <select
+          id={fromWalletInputId}
           className="input"
           value={fromWalletId}
           onChange={(e) => setFromWalletId(e.target.value)}
@@ -114,10 +129,11 @@ export function AddExchangeForm({
         </select>
       </div>
       <div className="form-group">
-        <label>
+        <label htmlFor={fromAmountInputId}>
           Amount Sent {fromWallet?.currency ? `(${fromWallet.currency})` : ""}
         </label>
         <input
+          id={fromAmountInputId}
           className="input"
           type="number"
           value={fromAmount || ""}
@@ -125,8 +141,9 @@ export function AddExchangeForm({
         />
       </div>
       <div className="form-group">
-        <label>To Wallet</label>
+        <label htmlFor={toWalletInputId}>To Wallet</label>
         <select
+          id={toWalletInputId}
           className="input"
           value={toWalletId}
           onChange={(e) => setToWalletId(e.target.value)}
@@ -139,10 +156,11 @@ export function AddExchangeForm({
         </select>
       </div>
       <div className="form-group">
-        <label>
+        <label htmlFor={toAmountInputId}>
           Amount Received {toWallet?.currency ? `(${toWallet.currency})` : ""}
         </label>
         <input
+          id={toAmountInputId}
           className="input"
           type="number"
           value={toAmount || ""}
@@ -159,8 +177,9 @@ export function AddExchangeForm({
         </div>
       )}
       <div className="form-group">
-        <label>Description (Optional)</label>
+        <label htmlFor={descriptionInputId}>Description (Optional)</label>
         <input
+          id={descriptionInputId}
           className="input"
           type="text"
           value={description}
