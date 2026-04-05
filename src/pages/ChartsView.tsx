@@ -2,24 +2,24 @@ import type { BarDatum } from "@nivo/bar";
 import { ResponsiveBar } from "@nivo/bar";
 import { ResponsivePie } from "@nivo/pie";
 import { useEffect, useMemo, useState } from "react";
-import { BiChevronDown, BiDoughnutChart, BiWallet } from "react-icons/bi";
+import {
+  BiCalendar,
+  BiChevronDown,
+  BiDoughnutChart,
+  BiWallet,
+} from "react-icons/bi";
+import { DateRangeControls } from "../components/DateRangeControls";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
 import { PageLayout } from "../components/PageLayout";
+import { useViewMode } from "../hooks/useViewMode";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
 import { Wallets } from "../localStorage/wallets";
-import { ChartType } from "../utils/consts";
-import {
-  type LocalTime,
-  getMaxDate,
-  localDateToUtcDate,
-  localTimeToLocalDate,
-  localTimeToUnix,
-  newLocalDate,
-} from "../utils/time";
+import { ChartType, ViewMode } from "../utils/consts";
+import { unixToLocalTime } from "../utils/time";
 
 type PieData = {
   id: string;
@@ -29,9 +29,8 @@ type PieData = {
 };
 
 type BarData = BarDatum & {
-  category: string;
+  date: string;
   amount: number;
-  color: string;
 };
 
 export function ChartsView() {
@@ -42,20 +41,17 @@ export function ChartsView() {
   const [pieData, setPieData] = useState<PieData[]>([]);
   const [barData, setBarData] = useState<BarData[]>([]);
   const [settings] = useState<Settings.Settings>(Settings.read());
-  const [customStartTime, setCustomStartTime] = useState<Date>(
-    localTimeToLocalDate({
-      year: new Date().getFullYear(),
-      month: new Date().getMonth() + 1,
-      day: 1,
-      hour: 0,
-      minute: 0,
-      second: 0,
-      milli: 0,
-    }),
-  );
-  const [customEndTime, setCustomEndTime] = useState<Date>(new Date());
+  const vm = useViewMode(ViewMode.Custom);
+  const [expenses] = useState(() => Expenses.readAll());
 
-  const expenses = Expenses.readAll();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sync view mode with chart type
+  useEffect(() => {
+    if (chartType === ChartType.Bar) {
+      vm.setViewMode(ViewMode.Daily);
+    } else {
+      vm.setViewMode(ViewMode.Custom);
+    }
+  }, [chartType]);
 
   useEffect(() => {
     openDb();
@@ -75,56 +71,15 @@ export function ChartsView() {
     setWallet(wallets[0]);
   }, [wallets, settings]);
 
-  // get data
   const displayData = useMemo(() => {
-    if (
-      !wallet ||
-      !categories ||
-      !expenses ||
-      !customStartTime ||
-      !customEndTime
-    ) {
-      return;
-    }
-    const maxDate = getMaxDate(
-      customStartTime.getFullYear(),
-      customStartTime.getMonth() + 1,
-    );
-    const startTime: LocalTime = {
-      year: customStartTime.getFullYear(),
-      month: customStartTime.getMonth() + 1,
-      day: customStartTime.getDate(),
-      hour: 0,
-      minute: 0,
-      second: 0,
-      milli: 0,
-    };
-    const endTime: LocalTime = {
-      year:
-        customEndTime.getDate() + 1 > maxDate &&
-        customEndTime.getMonth() + 1 + 1 > 12
-          ? customEndTime.getFullYear() + 1
-          : customEndTime.getFullYear(),
-      month:
-        customEndTime.getDate() + 1 > maxDate
-          ? customEndTime.getMonth() + 1 + 1 > 12
-            ? 1
-            : customEndTime.getMonth() + 1 + 1
-          : customEndTime.getMonth() + 1,
-      day:
-        customEndTime.getDate() + 1 > maxDate ? 1 : customEndTime.getDate() + 1,
-      hour: 0,
-      minute: 0,
-      second: 0,
-      milli: 0,
-    };
+    if (!wallet || !categories || !expenses || !vm.timeRange) return;
     return Expenses.readRange(
       expenses,
-      localTimeToUnix(startTime),
-      localTimeToUnix(endTime),
+      vm.timeRange.startTime,
+      vm.timeRange.endTime,
       wallet.id,
     );
-  }, [wallet, categories, expenses, customStartTime, customEndTime]);
+  }, [wallet, categories, expenses, vm.timeRange]);
 
   // chart data
   useEffect(() => {
@@ -160,36 +115,50 @@ export function ChartsView() {
         break;
       }
       case ChartType.Bar: {
-        const dataMap = new Map<string, BarData>();
+        const dataMap = new Map<string, { label: string; amount: number }>();
         for (const exp of displayData) {
-          const cat =
-            categories.find((category) => category.id === exp.categoryId) ??
-            Categories.defaultCategory;
-          let value = dataMap.get(cat.name);
-          if (!value) {
-            value = {
-              category: cat.name,
-              amount: exp.amount,
-              color: cat.color,
-            };
-          } else {
-            value.amount += exp.amount;
+          const lt = unixToLocalTime(exp.timestamp);
+          let key: string;
+          let label: string;
+          switch (vm.viewMode) {
+            case ViewMode.Monthly:
+              key = String(lt.month).padStart(2, "0");
+              label = String(lt.month);
+              break;
+            case ViewMode.Yearly:
+              key = String(lt.year);
+              label = String(lt.year);
+              break;
+            default:
+              key = String(lt.day).padStart(2, "0");
+              label = String(lt.day);
+              break;
           }
-          dataMap.set(cat.name, value);
+          const existing = dataMap.get(key);
+          if (existing) {
+            existing.amount += exp.amount;
+          } else {
+            dataMap.set(key, { label, amount: exp.amount });
+          }
         }
-        const data: BarData[] = [];
-        for (const value of dataMap.values()) {
-          value.amount = Math.round(value.amount * 100) / 100;
-          data.push(value);
-        }
-        data.sort((a, b) => b.amount - a.amount);
+        const sortedKeys = [...dataMap.keys()].sort();
+        const data: BarData[] = sortedKeys
+          .map((key) => {
+            const entry = dataMap.get(key);
+            if (!entry) return null;
+            return {
+              date: entry.label,
+              amount: Math.round(entry.amount * 100) / 100,
+            };
+          })
+          .filter((res) => !!res);
         setBarData(data);
         break;
       }
       default:
         break;
     }
-  }, [chartType, displayData, categories]);
+  }, [chartType, displayData, categories, vm.viewMode]);
 
   return (
     <PageLayout>
@@ -216,6 +185,27 @@ export function ChartsView() {
               {ChartType.Bar}
             </DropdownItem>
           </Dropdown>
+          {chartType === ChartType.Bar && (
+            <Dropdown
+              trigger={
+                <button type="button" className="btn">
+                  <BiCalendar />
+                  {vm.viewMode}
+                  <BiChevronDown />
+                </button>
+              }
+            >
+              <DropdownItem onClick={() => vm.setViewMode(ViewMode.Daily)}>
+                {ViewMode.Daily}
+              </DropdownItem>
+              <DropdownItem onClick={() => vm.setViewMode(ViewMode.Monthly)}>
+                {ViewMode.Monthly}
+              </DropdownItem>
+              <DropdownItem onClick={() => vm.setViewMode(ViewMode.Yearly)}>
+                {ViewMode.Yearly}
+              </DropdownItem>
+            </Dropdown>
+          )}
           <Dropdown
             align="right"
             trigger={
@@ -242,26 +232,7 @@ export function ChartsView() {
           </Dropdown>
         </div>
       </div>
-      <div id="second-lane" className="flex-row-space no-space gap-sm">
-        <input
-          id="startDate"
-          type="date"
-          className="input"
-          value={localDateToUtcDate(customStartTime).toISOString().slice(0, 10)}
-          onChange={(event) => {
-            setCustomStartTime(newLocalDate(event.target.value));
-          }}
-        />
-        <input
-          id="endDate"
-          type="date"
-          className="input"
-          value={localDateToUtcDate(customEndTime).toISOString().slice(0, 10)}
-          onChange={(event) => {
-            setCustomEndTime(newLocalDate(event.target.value));
-          }}
-        />
-      </div>
+      <DateRangeControls {...vm} />
       <div style={{ margin: "0.5rem", height: "fit-content" }}>
         <span style={{ margin: 0 }}>
           {"Total: "}
@@ -310,7 +281,7 @@ export function ChartsView() {
         {chartType === ChartType.Bar && (
           <div
             style={{
-              minWidth: 720,
+              minWidth: Math.max(720, barData.length * 30 + 120),
               width: "100%",
               height: "80vh",
               flexShrink: 0,
@@ -319,8 +290,8 @@ export function ChartsView() {
             <ResponsiveBar
               data={barData}
               keys={["amount"]}
-              indexBy="category"
-              colors={({ data }) => (data as BarData).color}
+              indexBy="date"
+              colors={() => "#3182ce"}
               margin={{ top: 40, right: 40, bottom: 80, left: 80 }}
               padding={0.3}
               borderWidth={1}
@@ -329,7 +300,7 @@ export function ChartsView() {
                 modifiers: [["darker", 0.2]],
               }}
               axisBottom={{
-                tickRotation: -35,
+                tickRotation: 35,
               }}
               labelSkipWidth={20}
               labelSkipHeight={20}

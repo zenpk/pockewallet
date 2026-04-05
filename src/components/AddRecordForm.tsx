@@ -141,6 +141,16 @@ export function AddRecordForm({
         />
       </div>
       <div className="form-group">
+        <label htmlFor={descriptionInputId}>Description (Optional)</label>
+        <Autocomplete
+          id={descriptionInputId}
+          className="input"
+          value={description}
+          onChange={handleDescriptionChange}
+          suggestions={suggestions}
+        />
+      </div>
+      <div className="form-group">
         <label htmlFor={categoryInputId}>Category</label>
         <select
           id={categoryInputId}
@@ -158,16 +168,6 @@ export function AddRecordForm({
             );
           })}
         </select>
-      </div>
-      <div className="form-group">
-        <label htmlFor={descriptionInputId}>Description (Optional)</label>
-        <Autocomplete
-          id={descriptionInputId}
-          className="input"
-          value={description}
-          onChange={handleDescriptionChange}
-          suggestions={suggestions}
-        />
       </div>
       <div className="form-group">
         <label htmlFor={amountInputId}>Amount</label>

@@ -54,7 +54,10 @@ export namespace Synonyms {
     const queue: string[] = [searchString];
 
     while (queue.length > 0) {
-      const term = queue.shift()!;
+      const term = queue.shift();
+      if (!term) {
+        break;
+      }
       const normalizedTerm = normalizeForSearch(term);
 
       for (const group of groups) {

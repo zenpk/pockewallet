@@ -204,7 +204,7 @@ export function SettingsView() {
           <span>Clear Recent Descriptions</span>
           <button
             type="button"
-            className="btn btn-red"
+            className="btn btn-red btn-fixed"
             onClick={() => {
               RecentDescriptions.clear();
               setCleared(true);
@@ -232,7 +232,7 @@ export function SettingsView() {
         >
           <button
             type="button"
-            className="btn btn-blue"
+            className="btn btn-blue btn-fixed"
             onClick={() => {
               Settings.write(settings);
               setSettings(Settings.read());

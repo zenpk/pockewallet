@@ -1,4 +1,4 @@
-const CACHE_NAME = "pockewallet-v0.4.0";
+const CACHE_NAME = "pockewallet-v0.4.1";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -32,19 +32,20 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-
-  // Skip API requests - always go to network
   if (event.request.url.includes("/api/")) return;
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone();
-        caches
-          .open(CACHE_NAME)
-          .then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request)),
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => cached);
+      return cached || fetchPromise;
+    }),
   );
 });

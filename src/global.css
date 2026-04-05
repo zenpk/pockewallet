@@ -171,15 +171,19 @@ select.input {
   height: 40px;
   font-size: 1rem;
   transition: border-color 0.15s, outline 0.15s;
+  color: #1a202c;
   color-scheme: light;
 }
 
+input[type="date"].input,
 input[type="datetime-local"].input {
   -webkit-appearance: none;
   appearance: none;
   display: flex;
   align-items: center;
   line-height: 1.2;
+  color: #1a202c;
+  -webkit-text-fill-color: #1a202c;
 }
 
 .input:focus,
@@ -191,6 +195,7 @@ select.input:focus {
 
 select.input {
   cursor: pointer;
+  opacity: 1;
   color: #1a202c;
   -webkit-text-fill-color: #1a202c;
 }
@@ -260,6 +265,13 @@ select.input option {
 
 .btn-icon:hover {
   background-color: #e2e8f0;
+}
+
+.btn-fixed {
+  width: 80px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Badge */
@@ -573,12 +585,12 @@ dialog::backdrop {
 .autocomplete-list {
   position: absolute;
   z-index: 60;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   right: 0;
   max-height: 12rem;
   overflow-y: auto;
-  margin: 0.25rem 0 0;
+  margin: 0 0 0.25rem;
   padding: 0.25rem 0;
   list-style: none;
   background: #fff;
