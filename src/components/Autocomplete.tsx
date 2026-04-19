@@ -53,6 +53,17 @@ export function Autocomplete({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const displayItems = useMemo(
+    () => filtered.slice(0, 20).reverse(),
+    [filtered],
+  );
+
+  useEffect(() => {
+    if (open && listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [open]);
+
   useEffect(() => {
     if (activeIndex >= 0 && listRef.current) {
       const item = listRef.current.children[activeIndex] as HTMLElement;
@@ -66,20 +77,20 @@ export function Autocomplete({
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (!open || filtered.length === 0) return;
+    if (!open || displayItems.length === 0) return;
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setActiveIndex((i) => (i + 1) % filtered.length);
+        setActiveIndex((i) => (i + 1) % displayItems.length);
         break;
       case "ArrowUp":
         e.preventDefault();
-        setActiveIndex((i) => (i <= 0 ? filtered.length - 1 : i - 1));
+        setActiveIndex((i) => (i <= 0 ? displayItems.length - 1 : i - 1));
         break;
       case "Enter":
-        if (activeIndex >= 0 && activeIndex < filtered.length) {
+        if (activeIndex >= 0 && activeIndex < displayItems.length) {
           e.preventDefault();
-          select(filtered[activeIndex]);
+          select(displayItems[activeIndex]);
         }
         break;
       case "Escape":
@@ -103,9 +114,9 @@ export function Autocomplete({
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
       />
-      {open && filtered.length > 0 && (
+      {open && displayItems.length > 0 && (
         <ul ref={listRef} className="autocomplete-list">
-          {filtered.slice(0, 20).map((s, i) => (
+          {displayItems.map((s, i) => (
             <li
               key={s}
               className={`autocomplete-item${i === activeIndex ? " active" : ""}`}

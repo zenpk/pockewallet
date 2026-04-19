@@ -102,6 +102,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
+  overscroll-behavior: none;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -568,6 +569,8 @@ dialog::backdrop {
   text-align: left;
   cursor: pointer;
   font-size: 0.95rem;
+  color: #1a202c;
+  -webkit-text-fill-color: #1a202c;
   transition: background-color 0.1s;
 }
 

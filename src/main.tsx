@@ -2,23 +2,47 @@ import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import "./global.css";
-import { CategoriesView } from "./pages/CategoriesView";
-import { ExchangeView } from "./pages/ExchangeView";
 import { ExpensesView } from "./pages/ExpensesView";
-import { RecurrenceView } from "./pages/RecurrenceView";
-import { SettingsView } from "./pages/SettingsView";
-import { SynonymsView } from "./pages/SynonymsView";
-import { WalletsView } from "./pages/WalletsView";
 import { STORE_VERIFIER } from "./utils/consts";
 
+const CategoriesView = lazy(() =>
+  import("./pages/CategoriesView").then((m) => ({
+    default: m.CategoriesView,
+  })),
+);
+const ExchangeView = lazy(() =>
+  import("./pages/ExchangeView").then((m) => ({
+    default: m.ExchangeView,
+  })),
+);
+const RecurrenceView = lazy(() =>
+  import("./pages/RecurrenceView").then((m) => ({
+    default: m.RecurrenceView,
+  })),
+);
+const SettingsView = lazy(() =>
+  import("./pages/SettingsView").then((m) => ({
+    default: m.SettingsView,
+  })),
+);
+const SynonymsView = lazy(() =>
+  import("./pages/SynonymsView").then((m) => ({
+    default: m.SynonymsView,
+  })),
+);
+const WalletsView = lazy(() =>
+  import("./pages/WalletsView").then((m) => ({
+    default: m.WalletsView,
+  })),
+);
 const ChartsView = lazy(() =>
-  import("./pages/ChartsView").then((module) => ({
-    default: module.ChartsView,
+  import("./pages/ChartsView").then((m) => ({
+    default: m.ChartsView,
   })),
 );
 const SyncView = lazy(() =>
-  import("./pages/SyncView").then((module) => ({
-    default: module.SyncView,
+  import("./pages/SyncView").then((m) => ({
+    default: m.SyncView,
   })),
 );
 
@@ -50,15 +74,15 @@ const router = createBrowserRouter([
   },
   {
     path: "/categories",
-    element: <CategoriesView />,
+    element: withRouteFallback(<CategoriesView />),
   },
   {
     path: "/wallets",
-    element: <WalletsView />,
+    element: withRouteFallback(<WalletsView />),
   },
   {
     path: "/recurrence",
-    element: <RecurrenceView />,
+    element: withRouteFallback(<RecurrenceView />),
   },
   {
     path: "/charts",
@@ -66,15 +90,15 @@ const router = createBrowserRouter([
   },
   {
     path: "/exchange",
-    element: <ExchangeView />,
+    element: withRouteFallback(<ExchangeView />),
   },
   {
     path: "/synonyms",
-    element: <SynonymsView />,
+    element: withRouteFallback(<SynonymsView />),
   },
   {
     path: "/settings",
-    element: <SettingsView />,
+    element: withRouteFallback(<SettingsView />),
   },
   {
     path: "/sync",
