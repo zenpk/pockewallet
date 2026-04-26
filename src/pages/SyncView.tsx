@@ -32,8 +32,6 @@ type SyncInfo = {
 
 type Message = { text: string; ok: boolean } | null;
 
-const YEAR_RANGE = 10;
-
 function fmtTs(ts: number | null | undefined): string {
   if (!ts) return "-";
   const d = new Date(ts);
@@ -72,10 +70,7 @@ function getLocalExpenseYears(): number[] {
 }
 
 function buildYearList(localYears: number[], serverYears: number[]): number[] {
-  const now = new Date().getFullYear();
-  const base = Array.from({ length: YEAR_RANGE }, (_, i) => now - i);
-
-  const all = new Set([...base, ...localYears, ...serverYears]);
+  const all = new Set([...localYears, ...serverYears]);
   return Array.from(all).sort((a, b) => b - a);
 }
 
@@ -563,7 +558,7 @@ export function SyncView() {
                 Categories / Wallets / Recurrences / Synonyms / Settings
               </div>
               <div style={{ ...tsStyle, marginBottom: "0.5rem" }}>
-                Server: {serverInfo?.hasOtherData ? "has data" : "empty"} (
+                Server: {serverInfo?.hasOtherData ? "exists" : "none"} (
                 {fmtTs(serverInfo?.otherLiveTimestamp)}) &nbsp;&middot;&nbsp;
                 Backup: {serverInfo?.hasOtherBackup ? "exists" : "none"} (
                 {fmtTs(serverInfo?.otherBackupTimestamp)})
