@@ -1,4 +1,4 @@
-const CACHE_NAME = "pockewallet-v0.4.2";
+const CACHE_NAME = "pockewallet-v0.4.3";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -30,18 +30,37 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function isHashedAsset(url) {
+  return /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(js|css)$/.test(url);
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (event.request.url.includes("/api/")) return;
+
+  if (isHashedAsset(event.request.url)) {
+    event.respondWith(
+      caches.match(event.request).then(
+        (cached) =>
+          cached ||
+          fetch(event.request).then((response) => {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+            return response;
+          }),
+      ),
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
         .then((response) => {
-          const clone = response.clone();
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, clone));
+          if (response.ok || response.type === "opaque") {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+          }
           return response;
         })
         .catch(() => cached);
