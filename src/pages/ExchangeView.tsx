@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { BiCalendar, BiChevronDown, BiPlus } from "react-icons/bi";
 import { AddExchangeForm } from "../components/AddExchangeForm";
 import { DateRangeControls } from "../components/DateRangeControls";
@@ -27,6 +28,13 @@ export function ExchangeView() {
   const [exchanges, setExchanges] = useState<Exchanges.Exchange[]>(
     Exchanges.readAll(),
   );
+
+  const minYear = useMemo(() => {
+    if (!exchanges.length) return undefined;
+    return Math.min(
+      ...exchanges.map((e) => new Date(e.timestamp).getFullYear()),
+    );
+  }, [exchanges]);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -87,7 +95,7 @@ export function ExchangeView() {
           </Dropdown>
         </div>
       </div>
-      <DateRangeControls {...vm} />
+      <DateRangeControls {...vm} minYear={minYear} />
       {wallets.length < 2 && (
         <p style={{ margin: "1rem", opacity: 0.6 }}>
           You need at least 2 wallets to record currency exchanges.

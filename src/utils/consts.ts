@@ -1,11 +1,3 @@
-import type { Categories } from "../localStorage/categories";
-import type { Exchanges } from "../localStorage/exchanges";
-import type { Expenses } from "../localStorage/expenses";
-import type { RecentDescriptions } from "../localStorage/recentDescriptions";
-import type { Recurrences } from "../localStorage/recurrences";
-import type { Synonyms } from "../localStorage/synonyms";
-import type { Wallets } from "../localStorage/wallets";
-
 export const DB_VERSION = 1;
 export const DB_NAME = "MyDatabase";
 
@@ -44,19 +36,6 @@ export enum SortMode {
 }
 
 export const COOKIE_ID = "id";
-
-export type SyncData = {
-  expenses: Expenses.Expense[];
-  categories: Categories.Category[];
-  wallets: Wallets.Wallet[];
-  recurrences: Recurrences.Recurrence[];
-  synonyms: Synonyms.SynonymGroup[];
-  exchanges: Exchanges.Exchange[];
-  recentDescriptions: RecentDescriptions.Entry;
-  settings: string;
-  timestamp: number;
-  userId: string;
-};
 
 export enum ChartType {
   Pie = "Pie",

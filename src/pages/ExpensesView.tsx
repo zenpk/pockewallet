@@ -32,6 +32,13 @@ export function ExpensesView() {
   const [maxAmount, setMaxAmount] = useState<number | null>(null);
   const [recurrenceChecked, setRecurrenceChecked] = useState(false);
 
+  const minYear = useMemo(() => {
+    if (!expenses.length) return undefined;
+    return Math.min(
+      ...expenses.map((e) => new Date(e.timestamp).getFullYear()),
+    );
+  }, [expenses]);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const onRecurrenceDone = useCallback(() => {
@@ -259,7 +266,7 @@ export function ExpensesView() {
           </Dropdown>
         </div>
       </div>
-      <DateRangeControls {...vm}>
+      <DateRangeControls {...vm} minYear={minYear}>
         {vm.viewMode === ViewMode.Custom && (
           <input
             type="number"

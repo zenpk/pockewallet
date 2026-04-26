@@ -12,6 +12,7 @@ export function DateRangeControls({
   setCustomStartTime,
   customEndTime,
   setCustomEndTime,
+  minYear,
   children,
 }: {
   viewMode: ViewMode;
@@ -23,8 +24,13 @@ export function DateRangeControls({
   setCustomStartTime: Dispatch<SetStateAction<Date>>;
   customEndTime: Date;
   setCustomEndTime: Dispatch<SetStateAction<Date>>;
+  minYear?: number;
   children?: React.ReactNode;
 }) {
+  const currentYear = getYear();
+  const oldest = Math.min(currentYear - 9, minYear ?? currentYear - 9);
+  const yearCount = currentYear - oldest + 1;
+
   return (
     <div id="second-lane" className="flex-row-space no-space gap-sm flex-wrap">
       {(viewMode === ViewMode.Monthly || viewMode === ViewMode.Daily) && (
@@ -33,9 +39,9 @@ export function DateRangeControls({
           onChange={(e) => setYear(Number.parseInt(e.target.value))}
           value={year}
         >
-          {Array.from({ length: 10 }, (_, i) => (
-            <option key={i.toString()} value={getYear() - i}>
-              {getYear() - i}
+          {Array.from({ length: yearCount }, (_, i) => (
+            <option key={i.toString()} value={currentYear - i}>
+              {currentYear - i}
             </option>
           ))}
         </select>

@@ -3,6 +3,7 @@ import {
   type SetStateAction,
   useEffect,
   useId,
+  useMemo,
   useState,
 } from "react";
 import { BiChevronDown, BiMenu, BiPlus, BiWallet } from "react-icons/bi";
@@ -56,6 +57,14 @@ export function RecurrenceView() {
     ? recurrences.filter((r) => r.walletId === wallet.id)
     : recurrences;
 
+  const sums = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const freq of Object.values(RecurrenceFrequency)) m[freq] = 0;
+    for (const r of filtered) m[r.frequency] += r.amount;
+    for (const k of Object.keys(m)) m[k] = Math.round(m[k] * 100) / 100;
+    return m;
+  }, [filtered]);
+
   return (
     <PageLayout>
       {isOpen && wallet && (
@@ -107,6 +116,22 @@ export function RecurrenceView() {
         </Dropdown>
       </div>
       <hr />
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          flexWrap: "wrap",
+          padding: "0.5rem 0.75rem",
+          fontSize: "0.875rem",
+        }}
+      >
+        {Object.values(RecurrenceFrequency).map((freq) => (
+          <span key={freq}>
+            <span style={{ color: "#718096" }}>{freq}:</span>{" "}
+            <span style={{ fontWeight: 600 }}>{sums[freq]}</span>
+          </span>
+        ))}
+      </div>
       <RecurrenceTable
         recurrences={filtered}
         setRecurrences={setRecurrences}

@@ -2,6 +2,7 @@ import type { BarDatum } from "@nivo/bar";
 import { ResponsiveBar } from "@nivo/bar";
 import { ResponsivePie } from "@nivo/pie";
 import { useEffect, useMemo, useState } from "react";
+
 import {
   BiCalendar,
   BiChevronDown,
@@ -43,6 +44,13 @@ export function ChartsView() {
   const [settings] = useState<Settings.Settings>(Settings.read());
   const vm = useViewMode(ViewMode.Custom);
   const [expenses] = useState(() => Expenses.readAll());
+
+  const minYear = useMemo(() => {
+    if (!expenses.length) return undefined;
+    return Math.min(
+      ...expenses.map((e) => new Date(e.timestamp).getFullYear()),
+    );
+  }, [expenses]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: sync view mode with chart type
   useEffect(() => {
@@ -232,7 +240,7 @@ export function ChartsView() {
           </Dropdown>
         </div>
       </div>
-      <DateRangeControls {...vm} />
+      <DateRangeControls {...vm} minYear={minYear} />
       <div style={{ margin: "0.5rem", height: "fit-content" }}>
         <span style={{ margin: 0 }}>
           {"Total: "}
