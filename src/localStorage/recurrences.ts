@@ -106,13 +106,14 @@ export namespace Recurrences {
     const pending: PendingExpense[] = [];
 
     for (const rec of readAll()) {
-      let cursor = rec.lastGeneratedDate
-        ? unixToLocalTime(rec.lastGeneratedDate)
-        : unixToLocalTime(rec.startDate);
-
-      // If lastGeneratedDate equals startDate or is set, start from next occurrence
+      let cursor: LocalTime;
       if (rec.lastGeneratedDate >= rec.startDate) {
-        cursor = advanceDate(cursor, rec.frequency);
+        cursor = advanceDate(
+          unixToLocalTime(rec.lastGeneratedDate),
+          rec.frequency,
+        );
+      } else {
+        cursor = unixToLocalTime(rec.startDate);
       }
 
       let ts = localTimeToUnix(cursor);
@@ -143,6 +144,7 @@ export namespace Recurrences {
         categoryId: p.categoryId,
         walletId: p.walletId,
         timestamp: p.timestamp,
+        recurrenceId: p.recurrenceId,
       });
       const prev = byRecurrence.get(p.recurrenceId) ?? 0;
       if (p.timestamp > prev) {
@@ -164,11 +166,14 @@ export namespace Recurrences {
     const now = Date.now();
     const all = readAll();
     for (const rec of all) {
-      let cursor = rec.lastGeneratedDate
-        ? unixToLocalTime(rec.lastGeneratedDate)
-        : unixToLocalTime(rec.startDate);
+      let cursor: LocalTime;
       if (rec.lastGeneratedDate >= rec.startDate) {
-        cursor = advanceDate(cursor, rec.frequency);
+        cursor = advanceDate(
+          unixToLocalTime(rec.lastGeneratedDate),
+          rec.frequency,
+        );
+      } else {
+        cursor = unixToLocalTime(rec.startDate);
       }
       let lastValid = rec.lastGeneratedDate;
       let ts = localTimeToUnix(cursor);

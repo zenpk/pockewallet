@@ -67,6 +67,42 @@ export namespace RecentDescriptions {
     writeStore(store);
   }
 
+  export function readAll(): Store {
+    return readStore();
+  }
+
+  export function writeAll(store: Store) {
+    writeStore(store);
+  }
+
+  export function removeEntry(walletId: string, description: string) {
+    const store = readStore();
+    const list = store[walletId];
+    if (!list) return;
+    store[walletId] = list.filter((e) => e.description !== description);
+    if (store[walletId].length === 0) delete store[walletId];
+    writeStore(store);
+  }
+
+  export function updateEntry(
+    walletId: string,
+    oldDescription: string,
+    newDescription: string,
+    newCategoryId?: string,
+  ) {
+    const trimmed = newDescription.trim();
+    if (!trimmed) return;
+    const store = readStore();
+    const list = store[walletId];
+    if (!list) return;
+    const entry = list.find((e) => e.description === oldDescription);
+    if (entry) {
+      entry.description = trimmed;
+      if (newCategoryId !== undefined) entry.categoryId = newCategoryId;
+    }
+    writeStore(store);
+  }
+
   export function clear() {
     localStorage.removeItem(STORE_DESCRIPTIONS);
   }

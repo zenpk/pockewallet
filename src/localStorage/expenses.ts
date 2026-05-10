@@ -10,6 +10,7 @@ export namespace Expenses {
     categoryId: string; // uuid
     walletId: string; // uuid
     timestamp: number;
+    recurrenceId?: string;
   };
 
   export function readAll() {

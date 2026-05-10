@@ -51,6 +51,7 @@ export function AddRecordForm({
     localTimeToUnix(genLocalTime(year, month, day)),
   );
   const [description, setDescription] = useState<string>("");
+  const [recurrenceId, setRecurrenceId] = useState<string | undefined>();
   const [recentEntries] = useState(() => RecentDescriptions.read(wallet?.id));
   const suggestions = useMemo(
     () => recentEntries.map((e) => e.description),
@@ -89,6 +90,7 @@ export function AddRecordForm({
         setAmount(result.amount);
         setDate(result.timestamp);
         setDescription(result.description ?? "");
+        setRecurrenceId(result.recurrenceId);
       } else {
         console.warn("No expense found with id: ", idValue);
       }
@@ -118,6 +120,7 @@ export function AddRecordForm({
           walletId: wallet.id,
           timestamp: date,
           description: description || "",
+          recurrenceId,
         });
         RecentDescriptions.add(wallet.id, description, categoryId);
         setExpenses(Expenses.readAll());

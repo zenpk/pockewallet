@@ -7,6 +7,7 @@ import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Exchanges } from "../localStorage/exchanges";
 import { Expenses } from "../localStorage/expenses";
+import { Memo } from "../localStorage/memo";
 import { Recurrences } from "../localStorage/recurrences";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";
@@ -239,6 +240,7 @@ export function SyncView() {
         ),
         settings: JSON.stringify(Settings.read()),
         timestamp: Date.now(),
+        memo: Memo.read(),
       });
       setMessage({ text: "Pushed categories / wallets / others", ok: true });
       fetchServerInfo();
@@ -263,6 +265,7 @@ export function SyncView() {
         exchanges: Exchanges.Exchange[];
         recentDescriptions: unknown;
         settings: string;
+        memo: string;
       }>(`/api/wallet/other/pull?userId=${id.uuid}`);
       Categories.writeAll(data.categories ?? []);
       Wallets.writeAll(data.wallets ?? []);
@@ -276,6 +279,7 @@ export function SyncView() {
       if (data.settings) {
         Settings.write(JSON.parse(data.settings) as Settings.Settings);
       }
+      Memo.write(data.memo ?? "");
       setMessage({ text: "Pulled categories / wallets / others", ok: true });
       fetchServerInfo();
     } catch {
@@ -555,7 +559,7 @@ export function SyncView() {
             {/* ── Other data ── */}
             <div style={sectionStyle}>
               <div style={sectionTitle}>
-                Categories / Wallets / Recurrences / Synonyms / Settings
+                Categories / Wallets / Recurrences / Synonyms / Memo / Settings
               </div>
               <div style={{ ...tsStyle, marginBottom: "0.5rem" }}>
                 Server: {serverInfo?.hasOtherData ? "exists" : "none"} (

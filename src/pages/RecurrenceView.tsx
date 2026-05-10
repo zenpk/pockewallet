@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { BiChevronDown, BiMenu, BiPlus, BiWallet } from "react-icons/bi";
+import { useSearchParams } from "react-router-dom";
 import { Dialog } from "../components/Dialog";
 import { Dropdown, DropdownItem } from "../components/Dropdown";
 import { LeftDrawer } from "../components/LeftDrawer";
@@ -27,6 +28,8 @@ import {
 import { getUuid } from "../utils/utils";
 
 export function RecurrenceView() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightId = searchParams.get("id");
   const [recurrences, setRecurrences] = useState<Recurrences.Recurrence[]>([]);
   const [categories, setCategories] = useState<Categories.Category[]>([]);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
@@ -43,6 +46,16 @@ export function RecurrenceView() {
 
   useEffect(() => {
     if (!wallets.length) return;
+    if (highlightId) {
+      const rec = recurrences.find((r) => r.id === highlightId);
+      if (rec) {
+        const w = wallets.find((w) => w.id === rec.walletId);
+        if (w) {
+          setWallet(w);
+          return;
+        }
+      }
+    }
     if (settings.defaultWallet) {
       const result = Wallets.readById(settings.defaultWallet);
       if (result) {
@@ -51,7 +64,15 @@ export function RecurrenceView() {
       }
     }
     setWallet(wallets[0]);
-  }, [wallets, settings]);
+  }, [wallets, settings, highlightId, recurrences]);
+
+  useEffect(() => {
+    if (!highlightId) return;
+    const timer = setTimeout(() => {
+      setSearchParams({}, { replace: true });
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [highlightId, setSearchParams]);
 
   const filtered = wallet
     ? recurrences.filter((r) => r.walletId === wallet.id)
@@ -137,6 +158,7 @@ export function RecurrenceView() {
         setRecurrences={setRecurrences}
         categories={categories}
         wallets={wallets}
+        highlightId={highlightId}
       />
     </PageLayout>
   );
@@ -289,11 +311,13 @@ function RecurrenceTable({
   setRecurrences,
   categories,
   wallets,
+  highlightId,
 }: {
   recurrences: Recurrences.Recurrence[];
   setRecurrences: Dispatch<SetStateAction<Recurrences.Recurrence[]>>;
   categories: Categories.Category[];
   wallets: Wallets.Wallet[];
+  highlightId: string | null;
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [currentId, setCurrentId] = useState(recurrences[0]?.id ?? "");
@@ -332,7 +356,14 @@ function RecurrenceTable({
                 categories.find((c) => c.id === r.categoryId) ??
                 Categories.defaultCategory;
               return (
-                <tr key={r.id}>
+                <tr
+                  key={r.id}
+                  style={
+                    highlightId === r.id
+                      ? { backgroundColor: "#bee3f8" }
+                      : undefined
+                  }
+                >
                   <td>{r.description}</td>
                   <td>{Math.round(r.amount * 100) / 100}</td>
                   <td>

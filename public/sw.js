@@ -1,4 +1,4 @@
-const CACHE_NAME = "pockewallet-v0.5.1";
+const CACHE_NAME = "pockewallet-v0.6.0";
 const PRECACHE_URLS = [
   "./",
   "./index.html",

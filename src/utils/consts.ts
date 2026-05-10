@@ -11,6 +11,7 @@ export const STORE_RECURRENCES = "Recurrences";
 export const STORE_SYNONYMS = "Synonyms";
 export const STORE_EXCHANGES = "Exchanges";
 export const STORE_DESCRIPTIONS = "RecentDescriptions";
+export const STORE_MEMO = "Memo";
 
 export enum RecurrenceFrequency {
   Daily = "Daily",

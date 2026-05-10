@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { BiChevronDown, BiChevronUp, BiMenu } from "react-icons/bi";
+import { Link } from "react-router-dom";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
@@ -23,6 +24,7 @@ type DisplayData = {
   description: string;
   amount: number;
   currency: string;
+  recurrenceId?: string;
 };
 
 export function DataTable({
@@ -73,6 +75,7 @@ export function DataTable({
           amount: expense.amount,
           currency:
             wallets.find((w) => w.id === expense.walletId)?.currency ?? "",
+          recurrenceId: expense.recurrenceId,
         };
       });
     }
@@ -191,7 +194,18 @@ export function DataTable({
               return (
                 <tr key={d.id}>
                   {settings.displayDate && <td>{!hasTheDate ? d.date : ""}</td>}
-                  <td style={{ whiteSpace: "normal" }}>{d.description}</td>
+                  <td style={{ whiteSpace: "normal" }}>
+                    {d.recurrenceId ? (
+                      <Link
+                        to={`/recurrence?id=${d.recurrenceId}`}
+                        style={{ color: "#3182ce" }}
+                      >
+                        {d.description}
+                      </Link>
+                    ) : (
+                      d.description
+                    )}
+                  </td>
                   <td>
                     {(wallet
                       ? settings.displayCurrency && `${wallet.currency} `

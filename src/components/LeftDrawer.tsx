@@ -6,6 +6,7 @@ import {
   BiDoughnutChart,
   BiMenu,
   BiMoneyWithdraw,
+  BiNote,
   BiRepeat,
   BiTransfer,
   BiWallet,
@@ -72,13 +73,17 @@ export function LeftDrawer() {
             <BiTransfer />
             <span>Synonyms</span>
           </Link>
-          <Link to="/settings" style={linkStyle} onClick={onClose}>
-            <BiCog />
-            <span>Settings</span>
+          <Link to="/memo" style={linkStyle} onClick={onClose}>
+            <BiNote />
+            <span>Memo</span>
           </Link>
           <Link to="/sync" style={linkStyle} onClick={onClose}>
             <BiCloud />
             <span>Sync</span>
+          </Link>
+          <Link to="/settings" style={linkStyle} onClick={onClose}>
+            <BiCog />
+            <span>Settings</span>
           </Link>
         </div>
       </div>

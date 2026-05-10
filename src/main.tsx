@@ -40,6 +40,11 @@ const ChartsView = lazy(() =>
     default: m.ChartsView,
   })),
 );
+const MemoView = lazy(() =>
+  import("./pages/MemoView").then((m) => ({
+    default: m.MemoView,
+  })),
+);
 const SyncView = lazy(() =>
   import("./pages/SyncView").then((m) => ({
     default: m.SyncView,
@@ -97,12 +102,16 @@ const router = createBrowserRouter([
     element: withRouteFallback(<SynonymsView />),
   },
   {
-    path: "/settings",
-    element: withRouteFallback(<SettingsView />),
+    path: "/memo",
+    element: withRouteFallback(<MemoView />),
   },
   {
     path: "/sync",
     element: withRouteFallback(<SyncView />),
+  },
+  {
+    path: "/settings",
+    element: withRouteFallback(<SettingsView />),
   },
 ]);
 
