@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pockewallet Boot Benchmark</title>
+<style>
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body { margin: 0; padding: 2rem; background: #f7f8fa; color: #1a202c; }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+  .sub { color: #718096; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  .card { background: #fff; border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card h2 { margin: 0 0 0.75rem; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .before .dot { background: #e53e3e; }
+  .after .dot { background: #38a169; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid #edf2f7; }
+  th { color: #718096; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .hl { font-weight: 700; color: #2d3748; }
+  .good { color: #38a169; font-weight: 600; }
+  .bad { color: #e53e3e; font-weight: 600; }
+  .bundle-info { font-size: 0.8rem; color: #718096; margin-bottom: 0.75rem; }
+  .bundle-info b { color: #4a5568; }
+  .status { padding: 0.5rem 1rem; border-radius: 0.375rem; margin-bottom: 1rem; font-size: 0.9rem; }
+  .status.run { background: #ebf8ff; color: #2b6cb0; }
+  .status.ok { background: #f0fff4; color: #276749; }
+  #comp { background: #fff; border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  #comp h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+  .bc { margin-bottom: 0.75rem; }
+  .bl { font-size: 0.8rem; margin-bottom: 0.25rem; color: #4a5568; }
+  .bw { display: flex; align-items: center; gap: 0.5rem; height: 22px; }
+  .b { height: 100%; border-radius: 3px; min-width: 2px; }
+  .b.bf { background: #fc8181; }
+  .b.af { background: #68d391; }
+  .bv { font-size: 0.75rem; color: #718096; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.8rem; color: #718096; }
+  .legend span { display: flex; align-items: center; gap: 0.35rem; }
+  .sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+  iframe { width: 1px; height: 1px; border: none; position: absolute; left: -9999px; }
+  .seed-info { font-size: 0.8rem; color: #a0aec0; margin-bottom: 1rem; }
+  .btn { padding: 0.5rem 1.5rem; border: none; border-radius: 0.375rem; font-weight: 600;
+         cursor: pointer; font-size: 0.95rem; background: #3182ce; color: #fff; }
+  .btn:hover { background: #2b6cb0; }
+  .btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<h1>Pockewallet Boot Benchmark</h1>
+<p class="sub">Measures real browser boot performance with seeded localStorage data</p>
+<p class="seed-info">Seed: 2000 expenses, 15 categories, 5 wallets, 3 recurrences (1 daily with 60-day gap)</p>
+<button class="btn" id="runBtn" onclick="run()">Run Benchmark (5 iterations each)</button>
+<div id="st" class="status run" style="display:none"></div>
+<div class="grid" style="margin-top:1.5rem">
+  <div class="card before">
+    <h2><span class="dot"></span> Before (baseline)</h2>
+    <div class="bundle-info">Entry: <b>43.52 kB</b> &middot; Vendor: <b>207.90 kB</b> &middot; Total blocking: <b>251.42 kB</b></div>
+    <table id="tb"><thead><tr><th>Mark</th><th class="num">Avg ms</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card after">
+    <h2><span class="dot"></span> After (optimized)</h2>
+    <div class="bundle-info">Entry: <b>43.39 kB</b> &middot; Vendor: <b>207.73 kB</b> &middot; CSS: <b>inlined</b> &middot; SW precache: <b>auto</b></div>
+    <table id="ta"><thead><tr><th>Mark</th><th class="num">Avg ms</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+<div id="comp" style="display:none">
+  <h2>Comparison</h2>
+  <div class="legend">
+    <span><span class="sw" style="background:#fc8181"></span> Before</span>
+    <span><span class="sw" style="background:#68d391"></span> After</span>
+  </div>
+  <div id="bars"></div>
+</div>
+<iframe id="f"></iframe>
+<script>
+const N = 5;
+
+function genSeed() {
+  var cats = [], wals = [], exps = [], recs = [];
+  var colors = ["#e53e3e","#dd6b20","#d69e2e","#38a169","#319795","#3182ce","#5a67d8","#805ad5",
+                "#d53f8c","#718096","#2d3748","#c05621","#2f855a","#2b6cb0","#6b46c1"];
+  for (var i = 0; i < 15; i++) cats.push({id:"cat-"+i, name:"Cat "+i, color:colors[i], deletable:i>0});
+  var cur = ["$","EUR","JPY","GBP","CNY"];
+  for (var i = 0; i < 5; i++) wals.push({id:"wal-"+i, name:"Wallet "+i, currency:cur[i], deletable:i>0});
+  var now = Date.now(), day = 864e5;
+  for (var i = 0; i < 2000; i++) {
+    exps.push({id:"exp-"+i, amount:Math.round((Math.random()*500+1)*100)/100,
+      description:"Expense "+i, categoryId:"cat-"+(i%15), walletId:"wal-"+(i%5),
+      timestamp: now - i*day/2 + Math.floor(Math.random()*day/4)});
+  }
+  recs.push({id:"rec-d",amount:10,description:"Daily sub",categoryId:"cat-0",walletId:"wal-0",
+    frequency:"Daily",startDate:now-400*day,lastGeneratedDate:now-60*day});
+  recs.push({id:"rec-w",amount:50,description:"Weekly",categoryId:"cat-3",walletId:"wal-1",
+    frequency:"Weekly",startDate:now-180*day,lastGeneratedDate:now-30*day});
+  recs.push({id:"rec-m",amount:1200,description:"Monthly rent",categoryId:"cat-1",walletId:"wal-0",
+    frequency:"Monthly",startDate:now-365*day,lastGeneratedDate:now-35*day});
+  var settings = {displayDate:true,displayCurrency:true,displayConciseDate:false,combineDate:true,
+    defaultViewMode:"Monthly",defaultWallet:"wal-0"};
+  return {cats:cats, wals:wals, exps:exps, recs:recs, settings:settings};
+}
+
+function seed() {
+  var d = genSeed();
+  localStorage.setItem("Categories", JSON.stringify(d.cats));
+  localStorage.setItem("Wallets", JSON.stringify(d.wals));
+  localStorage.setItem("Expenses", JSON.stringify(d.exps));
+  localStorage.setItem("Recurrences", JSON.stringify(d.recs));
+  localStorage.setItem("Settings", JSON.stringify(d.settings));
+}
+
+function setBuild(name) {
+  document.cookie = "build=" + name + ";path=/;samesite=lax";
+}
+
+function clearSW() {
+  if (!navigator.serviceWorker) return Promise.resolve();
+  return navigator.serviceWorker.getRegistrations().then(function(regs) {
+    return Promise.all(regs.map(function(r) { return r.unregister(); }));
+  });
+}
+
+function measure() {
+  return new Promise(function(resolve) {
+    var f = document.getElementById("f");
+    f.onload = function() {
+      setTimeout(function() {
+        try {
+          var w = f.contentWindow;
+          var marks = w.performance.getEntriesByType("mark").map(function(m) {
+            return {name: m.name, time: Math.round(m.startTime * 100) / 100};
+          });
+          var fp = w.performance.getEntriesByName("first-contentful-paint","paint")[0];
+          resolve({marks: marks, fcp: fp ? Math.round(fp.startTime * 100) / 100 : null});
+        } catch(e) {
+          console.error("measure error", e);
+          resolve({marks: [], fcp: null});
+        }
+      }, 2500);
+    };
+    f.src = "/?_t=" + Date.now();
+  });
+}
+
+function setStatus(t) {
+  var el = document.getElementById("st");
+  el.style.display = "block";
+  el.className = "status run";
+  el.textContent = t;
+}
+
+var bRes = [], aRes = [];
+
+async function run() {
+  var btn = document.getElementById("runBtn");
+  btn.disabled = true;
+  bRes = []; aRes = [];
+
+  await clearSW();
+
+  setBuild("before");
+  for (var i = 0; i < N; i++) {
+    setStatus("BEFORE - iteration " + (i+1) + "/" + N + "...");
+    seed();
+    await measure().then(function(r) { bRes.push(r); });
+    await clearSW();
+    await new Promise(function(r) { setTimeout(r, 200); });
+  }
+
+  setBuild("after");
+  for (var i = 0; i < N; i++) {
+    setStatus("AFTER - iteration " + (i+1) + "/" + N + "...");
+    seed();
+    await measure().then(function(r) { aRes.push(r); });
+    await clearSW();
+    await new Promise(function(r) { setTimeout(r, 200); });
+  }
+
+  var el = document.getElementById("st");
+  el.className = "status ok";
+  el.textContent = "Done! " + N + " iterations each.";
+  btn.disabled = false;
+  show();
+}
+
+function avg(results) {
+  var names = new Set();
+  results.forEach(function(r) { r.marks.forEach(function(m) { names.add(m.name); }); });
+  var out = {};
+  names.forEach(function(n) {
+    var vals = results.map(function(r) { var m = r.marks.find(function(x){return x.name===n}); return m?m.time:null; }).filter(function(v){return v!==null;});
+    if (vals.length) out[n] = Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*100)/100;
+  });
+  var fcps = results.map(function(r){return r.fcp;}).filter(function(v){return v!=null;});
+  if (fcps.length) out["FCP"] = Math.round(fcps.reduce(function(a,b){return a+b;},0)/fcps.length*100)/100;
+  return out;
+}
+
+var ORDER = ["html-parsed","entry-modules-loaded","render-called","expenses-render","opendb-start","opendb-end","recurrence-calc-start","recurrence-calc-end","FCP"];
+var LABELS = {"html-parsed":"HTML parsed","entry-modules-loaded":"Entry JS evaluated","render-called":"React render called",
+  "expenses-render":"ExpensesView render","opendb-start":"openDb() start","opendb-end":"Data fully loaded",
+  "recurrence-calc-start":"Recurrence calc start","recurrence-calc-end":"Recurrence calc end","FCP":"First Contentful Paint"};
+
+function fillT(id, data) {
+  var tb = document.querySelector("#"+id+" tbody"); tb.innerHTML = "";
+  ORDER.forEach(function(k) {
+    if (data[k] === undefined) return;
+    var hl = k==="FCP"||k==="entry-modules-loaded"||k==="expenses-render";
+    tb.innerHTML += "<tr><td>"+(LABELS[k]||k)+"</td><td class='num "+(hl?"hl":"")+"'>"+data[k].toFixed(2)+"</td></tr>";
+  });
+}
+
+function show() {
+  var ba = avg(bRes), aa = avg(aRes);
+  fillT("tb", ba); fillT("ta", aa);
+  var c = document.getElementById("comp"); c.style.display = "block";
+  var bd = document.getElementById("bars"); bd.innerHTML = "";
+  var metrics = [
+    {k:"entry-modules-loaded",l:"Entry JS eval time"},
+    {k:"expenses-render",l:"ExpensesView first render"},
+    {k:"opendb-end",l:"Data loaded (openDb + read)"},
+    {k:"recurrence-calc-end",l:"Recurrence calc complete"},
+    {k:"FCP",l:"First Contentful Paint"}
+  ];
+  metrics.forEach(function(m) {
+    var b = ba[m.k], a = aa[m.k];
+    if (b===undefined && a===undefined) return;
+    var mx = Math.max(b||0,a||0,1);
+    var pct = (b&&a) ? Math.round((1 - a/b)*100) : null;
+    var ps = pct!==null ? (pct>0 ? pct+"% faster" : (-pct)+"% slower") : "";
+    var cls = pct!==null ? (pct>0 ? "good" : "bad") : "";
+    bd.innerHTML += '<div class="bc"><div class="bl">'+m.l+(ps?' <span class="'+cls+'">('+ps+')</span>':'')+'</div>'
+      +'<div class="bw"><div class="b bf" style="width:'+((b||0)/mx*100).toFixed(1)+'%"></div><span class="bv">'+(b!=null?b.toFixed(1)+' ms':'N/A')+'</span></div>'
+      +'<div class="bw"><div class="b af" style="width:'+((a||0)/mx*100).toFixed(1)+'%"></div><span class="bv">'+(a!=null?a.toFixed(1)+' ms':'N/A')+'</span></div></div>';
+  });
+}
+</script>
+</body>
+</html>

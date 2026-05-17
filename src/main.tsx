@@ -4,6 +4,7 @@ import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import "./global.css";
 import { ExpensesView } from "./pages/ExpensesView";
 import { STORE_VERIFIER } from "./utils/consts";
+performance.mark("entry-modules-loaded");
 
 const CategoriesView = lazy(() =>
   import("./pages/CategoriesView").then((m) => ({
@@ -116,6 +117,7 @@ const router = createBrowserRouter([
 ]);
 
 function renderApp() {
+  performance.mark("render-called");
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <RouterProvider router={router} />

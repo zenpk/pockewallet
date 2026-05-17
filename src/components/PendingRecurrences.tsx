@@ -1,21 +1,23 @@
 import { useEffect, useRef, useState } from "react";
-import { Categories } from "../localStorage/categories";
+import type { Categories } from "../localStorage/categories";
 import { Recurrences } from "../localStorage/recurrences";
-import { Wallets } from "../localStorage/wallets";
+import type { Wallets } from "../localStorage/wallets";
 import { unixToLocalTime } from "../utils/time";
 
 type Props = {
   onDone: () => void;
+  categories: Categories.Category[];
+  wallets: Wallets.Wallet[];
 };
 
-export function PendingRecurrences({ onDone }: Props) {
+export function PendingRecurrences({ onDone, categories, wallets }: Props) {
   const [pending, setPending] = useState<Recurrences.PendingExpense[]>([]);
-  const [categories] = useState(Categories.readAll());
-  const [wallets] = useState(Wallets.readAll());
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    performance.mark("recurrence-calc-start");
     const items = Recurrences.getPendingExpenses();
+    performance.mark("recurrence-calc-end");
     if (items.length === 0) {
       onDone();
       return;

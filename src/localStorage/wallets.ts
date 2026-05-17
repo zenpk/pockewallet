@@ -9,7 +9,7 @@ export namespace Wallets {
     deletable: boolean;
   };
 
-  export function writeDefault() {
+  export function writeDefault(): Wallet[] {
     if (!localStorage.getItem(STORE_WALLETS)) {
       localStorage.setItem(
         STORE_WALLETS,
@@ -29,11 +29,11 @@ export namespace Wallets {
       if (idSet.has(wallet.id)) {
         console.log("wallets have corrupted data");
         localStorage.removeItem(STORE_WALLETS);
-        writeDefault();
-        break;
+        return writeDefault();
       }
       idSet.add(wallet.id);
     }
+    return wallets;
   }
 
   export function readAll() {

@@ -100,6 +100,8 @@ export namespace Recurrences {
     };
   }
 
+  const MAX_PENDING_PER_RECURRENCE = 500;
+
   /** Returns expenses that should have been generated but haven't yet. */
   export function getPendingExpenses(): PendingExpense[] {
     const now = Date.now();
@@ -116,8 +118,9 @@ export namespace Recurrences {
         cursor = unixToLocalTime(rec.startDate);
       }
 
+      let count = 0;
       let ts = localTimeToUnix(cursor);
-      while (ts <= now) {
+      while (ts <= now && count < MAX_PENDING_PER_RECURRENCE) {
         pending.push({
           recurrenceId: rec.id,
           description: rec.description,
@@ -128,6 +131,7 @@ export namespace Recurrences {
         });
         cursor = advanceDate(cursor, rec.frequency);
         ts = localTimeToUnix(cursor);
+        count++;
       }
     }
     return pending;

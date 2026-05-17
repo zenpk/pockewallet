@@ -19,6 +19,7 @@ import { ViewMode } from "../utils/consts";
 import { genLocalTime, getDate, unixToLocalTime } from "../utils/time";
 
 export function ExpensesView() {
+  performance.mark("expenses-render");
   const vm = useViewMode();
   const [wallet, setWallet] = useState<Wallets.Wallet | null>(null);
   const [wallets, setWallets] = useState<Wallets.Wallet[]>([]);
@@ -34,9 +35,11 @@ export function ExpensesView() {
 
   const minYear = useMemo(() => {
     if (!expenses.length) return undefined;
-    return Math.min(
-      ...expenses.map((e) => new Date(e.timestamp).getFullYear()),
-    );
+    let minTs = expenses[0].timestamp;
+    for (let i = 1; i < expenses.length; i++) {
+      if (expenses[i].timestamp < minTs) minTs = expenses[i].timestamp;
+    }
+    return new Date(minTs).getFullYear();
   }, [expenses]);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -47,9 +50,11 @@ export function ExpensesView() {
   }, []);
 
   useEffect(() => {
-    openDb();
-    setWallets(Wallets.readAll());
-    setCategories(Categories.readAll());
+    performance.mark("opendb-start");
+    const { categories, wallets } = openDb();
+    performance.mark("opendb-end");
+    setWallets(wallets);
+    setCategories(categories);
   }, []);
 
   useEffect(() => {
@@ -183,7 +188,13 @@ export function ExpensesView() {
 
   return (
     <PageLayout>
-      {!recurrenceChecked && <PendingRecurrences onDone={onRecurrenceDone} />}
+      {!recurrenceChecked && wallets.length > 0 && categories.length > 0 && (
+        <PendingRecurrences
+          onDone={onRecurrenceDone}
+          categories={categories}
+          wallets={wallets}
+        />
+      )}
       {isOpen && wallet && (
         <AddRecordForm
           categories={categories}

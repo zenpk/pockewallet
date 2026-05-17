@@ -16,7 +16,7 @@ export namespace Categories {
     deletable: false,
   };
 
-  export function writeDefault() {
+  export function writeDefault(): Category[] {
     if (!localStorage.getItem(STORE_CATEGORIES)) {
       localStorage.setItem(STORE_CATEGORIES, JSON.stringify([defaultCategory]));
     }
@@ -27,11 +27,11 @@ export namespace Categories {
       if (idSet.has(category.id)) {
         console.log("categories have corrupted data");
         localStorage.removeItem(STORE_CATEGORIES);
-        writeDefault();
-        break;
+        return writeDefault();
       }
       idSet.add(category.id);
     }
+    return categories;
   }
 
   export function readAll() {
