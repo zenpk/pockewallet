@@ -1,7 +1,7 @@
-import react from "@vitejs/plugin-react";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import react from "@vitejs/plugin-react";
 import { type Plugin, defineConfig, loadEnv } from "vite";
 
 /**
@@ -25,8 +25,10 @@ function swPrecache(): Plugin {
         "./android-chrome-192x192.png",
         "./android-chrome-384x384.png",
       ];
-      for (const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)) {
-        precacheUrls.push(`.${m[1]}`);
+      const matches = html.match(/(?:src|href)="(\/assets\/[^"]+)"/g) ?? [];
+      for (const raw of matches) {
+        const path = raw.replace(/^(?:src|href)="/, "").replace(/"$/, "");
+        precacheUrls.push(`.${path}`);
       }
 
       const swPath = join(distDir, "sw.js");

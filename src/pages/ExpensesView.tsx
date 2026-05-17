@@ -10,7 +10,7 @@ import { PageLayout } from "../components/PageLayout";
 import { PendingRecurrences } from "../components/PendingRecurrences";
 import { useDisclosure } from "../hooks/useDisclosure";
 import { useViewMode } from "../hooks/useViewMode";
-import { Categories } from "../localStorage/categories";
+import type { Categories } from "../localStorage/categories";
 import { Expenses } from "../localStorage/expenses";
 import { Settings } from "../localStorage/settings";
 import { openDb } from "../localStorage/shared";

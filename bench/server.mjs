@@ -1,6 +1,6 @@
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { readFileSync, existsSync, statSync } from "node:fs";
-import { join, extname } from "node:path";
+import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -30,7 +30,10 @@ const server = createServer((req, res) => {
 
   if (url === "/bench.html" || url === "/bench") {
     const html = readFileSync(join(__dirname, "bench.html"), "utf-8");
-    res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-store" });
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "Cache-Control": "no-store",
+    });
     res.end(html);
     return;
   }
@@ -45,7 +48,10 @@ const server = createServer((req, res) => {
   if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
     const index = join(root, "index.html");
     if (existsSync(index)) {
-      res.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-store" });
+      res.writeHead(200, {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store",
+      });
       res.end(readFileSync(index));
       return;
     }

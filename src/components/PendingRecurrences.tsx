@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Categories } from "../localStorage/categories";
+import { Categories } from "../localStorage/categories";
 import { Recurrences } from "../localStorage/recurrences";
 import type { Wallets } from "../localStorage/wallets";
 import { unixToLocalTime } from "../utils/time";

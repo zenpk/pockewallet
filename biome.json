@@ -35,6 +35,12 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", "tsconfig.*", "src/main.tsx"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      "bench/dist-*",
+      "tsconfig.*",
+      "src/main.tsx"
+    ]
   }
 }
