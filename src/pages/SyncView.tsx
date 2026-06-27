@@ -309,7 +309,7 @@ export function SyncView() {
 
   async function goToLogin() {
     try {
-      const cv = await oAuthSdk.genChallengeVerifier(128);
+      const cv = await oAuthSdk.genChallengeVerifier(64);
       const state = crypto.randomUUID();
       const nonce = crypto.randomUUID();
       const redirectUri =
