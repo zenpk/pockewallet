@@ -36,8 +36,9 @@ Create a `.env` file (optional, for backend sync):
 
 ```
 VITE_BACKEND_ENDPOINT=http://localhost:8080
-VITE_OAUTH_ENDPOINT=http://localhost:9090
+VITE_OAUTH_ISSUER=http://localhost:9090
 VITE_CLIENT_ID=your-client-id
+VITE_REDIRECT=http://localhost:5173
 ```
 
 ### Dev server

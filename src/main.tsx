@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import "./global.css";
 import { ExpensesView } from "./pages/ExpensesView";
-import { STORE_VERIFIER } from "./utils/consts";
+import { STORE_OAUTH_STATE, STORE_VERIFIER } from "./utils/consts";
 performance.mark("entry-modules-loaded");
 
 const CategoriesView = lazy(() =>
@@ -126,18 +126,40 @@ function renderApp() {
 }
 
 const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get("authorizationCode")) {
-  import("./endpoints/oauth")
-    .then(({ oAuthSdk }) =>
-      oAuthSdk.authorize(localStorage.getItem(STORE_VERIFIER) as string),
-    )
-    .then((resp) => {
-      console.log(resp);
-      window.location.replace("/");
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+const callbackCode = urlParams.get("code");
+if (callbackCode) {
+  const verifier = localStorage.getItem(STORE_VERIFIER) ?? "";
+  const expectedState = localStorage.getItem(STORE_OAUTH_STATE) ?? "";
+  const state = urlParams.get("state") ?? "";
+  const redirectUri = (import.meta.env.VITE_REDIRECT as string) || window.location.origin;
+
+  if (!verifier || !state || state !== expectedState) {
+    localStorage.removeItem(STORE_VERIFIER);
+    localStorage.removeItem(STORE_OAUTH_STATE);
+    window.history.replaceState({}, "", "/");
+    renderApp();
+  } else {
+    import("./endpoints/oauth")
+      .then(({ oAuthSdk }) =>
+        oAuthSdk.authorize({
+          codeVerifier: verifier,
+          code: callbackCode,
+          state: state,
+          redirectUri: redirectUri,
+        }),
+      )
+      .then(() => {
+        localStorage.removeItem(STORE_VERIFIER);
+        localStorage.removeItem(STORE_OAUTH_STATE);
+        window.location.replace("/");
+      })
+      .catch(() => {
+        localStorage.removeItem(STORE_VERIFIER);
+        localStorage.removeItem(STORE_OAUTH_STATE);
+        window.history.replaceState({}, "", "/");
+        renderApp();
+      });
+  }
 } else {
   renderApp();
 }

@@ -14,8 +14,11 @@ import { openDb } from "../localStorage/shared";
 import { Synonyms } from "../localStorage/synonyms";
 import { Wallets } from "../localStorage/wallets";
 import { fetchJson, postJson } from "../utils/api";
-import { STORE_DESCRIPTIONS, STORE_VERIFIER } from "../utils/consts";
-import { getIdFromCookie } from "../utils/utils";
+import {
+  STORE_DESCRIPTIONS,
+  STORE_OAUTH_STATE,
+  STORE_VERIFIER,
+} from "../utils/consts";
 
 type YearInfo = {
   liveCount: number;
@@ -32,6 +35,10 @@ type SyncInfo = {
 };
 
 type Message = { text: string; ok: boolean } | null;
+type AuthMe = {
+  sub: string;
+  username: string;
+};
 
 function fmtTs(ts: number | null | undefined): string {
   if (!ts) return "-";
@@ -80,6 +87,7 @@ function buildYearList(localYears: number[], serverYears: number[]): number[] {
 export function SyncView() {
   const [loginChecked, setLoginChecked] = useState(false);
   const [login, setLogin] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<Message>(null);
@@ -104,34 +112,35 @@ export function SyncView() {
   }, [refreshLocalYears]);
 
   useEffect(() => {
-    fetchJson("/api/check")
-      .then(() => {
-        setLogin(true);
+    async function loadAuth() {
+      try {
+        await fetchJson("/api/check");
+      } catch {
+        await postJson("/api/refresh", {});
+      }
+      const me = await fetchJson<AuthMe>("/api/me");
+      setAuthUser(me);
+      setLogin(true);
+      setLoginChecked(true);
+    }
+
+    loadAuth()
+      .catch(() => {
+        setLogin(false);
+        setAuthUser(null);
         setLoginChecked(true);
       })
-      .catch(() =>
-        postJson("/api/refresh", {})
-          .then(() => {
-            setLogin(true);
-            setLoginChecked(true);
-          })
-          .catch(() => {
-            setLogin(false);
-            setLoginChecked(true);
-          }),
-      )
       .finally(() => setLoading(false));
   }, []);
 
   const tz = new Date().getTimezoneOffset();
 
   const fetchServerInfo = useCallback(() => {
-    const id = getIdFromCookie();
-    if (!id) return;
-    fetchJson<SyncInfo>(`/api/wallet/info?userId=${id.uuid}&tz=${tz}`)
+    if (!authUser?.sub) return;
+    fetchJson<SyncInfo>(`/api/wallet/info?tz=${tz}`)
       .then(setServerInfo)
       .catch(() => {});
-  }, [tz]);
+  }, [authUser?.sub, tz]);
 
   useEffect(() => {
     if (login) fetchServerInfo();
@@ -145,14 +154,12 @@ export function SyncView() {
   // ── Expense actions ──
 
   async function pushExpenses(year: number) {
-    const id = getIdFromCookie();
-    if (!id) return;
+    if (!authUser?.sub) return;
     setSyncing(true);
     setMessage(null);
     try {
       const expenses = getLocalExpensesByYear(year);
       await postJson("/api/wallet/expenses/push", {
-        userId: id.uuid,
         year,
         tz,
         expenses,
@@ -170,13 +177,12 @@ export function SyncView() {
   }
 
   async function pullExpenses(year: number) {
-    const id = getIdFromCookie();
-    if (!id) return;
+    if (!authUser?.sub) return;
     setSyncing(true);
     setMessage(null);
     try {
       const data = await fetchJson<{ expenses: Expenses.Expense[] }>(
-        `/api/wallet/expenses/pull?userId=${id.uuid}&year=${year}&tz=${tz}`,
+        `/api/wallet/expenses/pull?year=${year}&tz=${tz}`,
       );
       removeLocalExpensesByYear(year);
       const all = Expenses.readAll();
@@ -201,13 +207,11 @@ export function SyncView() {
   }
 
   async function backupExpenses(year: number) {
-    const id = getIdFromCookie();
-    if (!id) return;
+    if (!authUser?.sub) return;
     setSyncing(true);
     setMessage(null);
     try {
       await postJson("/api/wallet/expenses/backup", {
-        userId: id.uuid,
         year,
         tz,
       });
@@ -223,13 +227,11 @@ export function SyncView() {
   // ── Other data actions ──
 
   async function pushOtherData() {
-    const id = getIdFromCookie();
-    if (!id) return;
+    if (!authUser?.sub) return;
     setSyncing(true);
     setMessage(null);
     try {
       await postJson("/api/wallet/other/push", {
-        userId: id.uuid,
         categories: Categories.readAll(),
         wallets: Wallets.readAll(),
         recurrences: Recurrences.readAll(),
@@ -252,8 +254,7 @@ export function SyncView() {
   }
 
   async function pullOtherData() {
-    const id = getIdFromCookie();
-    if (!id) return;
+    if (!authUser?.sub) return;
     setSyncing(true);
     setMessage(null);
     try {
@@ -266,7 +267,7 @@ export function SyncView() {
         recentDescriptions: unknown;
         settings: string;
         memo: string;
-      }>(`/api/wallet/other/pull?userId=${id.uuid}`);
+      }>("/api/wallet/other/pull");
       Categories.writeAll(data.categories ?? []);
       Wallets.writeAll(data.wallets ?? []);
       Recurrences.writeAll(data.recurrences ?? []);
@@ -290,12 +291,11 @@ export function SyncView() {
   }
 
   async function backupOtherData() {
-    const id = getIdFromCookie();
-    if (!id) return;
+    if (!authUser?.sub) return;
     setSyncing(true);
     setMessage(null);
     try {
-      await postJson("/api/wallet/other/backup", { userId: id.uuid });
+      await postJson("/api/wallet/other/backup", {});
       setMessage({ text: "Backed up categories / wallets / others", ok: true });
       fetchServerInfo();
     } catch {
@@ -308,26 +308,39 @@ export function SyncView() {
   // ── Auth ──
 
   async function goToLogin() {
-    const cv = await oAuthSdk.genChallengeVerifier(128);
-    localStorage.setItem(STORE_VERIFIER, cv.codeVerifier);
-    oAuthSdk.redirectLogin({
-      clientId: import.meta.env.VITE_CLIENT_ID as string,
-      redirect: window.location.origin,
-      codeChallenge: cv.codeChallenge,
-    });
+    try {
+      const cv = await oAuthSdk.genChallengeVerifier(128);
+      const state = crypto.randomUUID();
+      const nonce = crypto.randomUUID();
+      const redirectUri =
+        (import.meta.env.VITE_REDIRECT as string) || window.location.origin;
+      localStorage.setItem(STORE_VERIFIER, cv.codeVerifier);
+      localStorage.setItem(STORE_OAUTH_STATE, state);
+      await oAuthSdk.redirectLogin({
+        clientId: import.meta.env.VITE_CLIENT_ID as string,
+        redirectUri: redirectUri,
+        codeChallenge: cv.codeChallenge,
+        state: state,
+        nonce: nonce,
+        scope: "openid profile",
+      });
+    } catch {
+      setMessage({ text: "Failed to initialize OAuth login", ok: false });
+    }
   }
 
   function logout() {
     fetchJson("/api/logout")
       .then(() => {
         setLogin(false);
+        setAuthUser(null);
         setServerInfo(null);
         setMessage(null);
       })
       .catch(() => {});
   }
 
-  const username = getIdFromCookie()?.username;
+  const username = authUser?.username;
 
   // ── Styles ──
 

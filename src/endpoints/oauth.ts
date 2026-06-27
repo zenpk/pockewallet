@@ -3,15 +3,24 @@ export type ChallengeVerifier = {
   codeVerifier: string;
 };
 
+type OidcDiscovery = {
+  authorization_endpoint: string;
+};
+
 export type LoginReq = {
   clientId: string;
-  redirect: string;
+  redirectUri: string;
   codeChallenge: string;
+  state: string;
+  nonce: string;
+  scope?: string;
 };
 
 export type AuthorizeReq = {
   codeVerifier: string;
-  authorizationCode: string;
+  code: string;
+  redirectUri: string;
+  state: string;
 };
 
 export type CommonResp = {
@@ -19,27 +28,7 @@ export type CommonResp = {
   msg: string;
 };
 
-export type AuthorizeResp = {
-  accessToken: string;
-  refreshToken: string;
-} & CommonResp;
-
-export type RefreshReq = {
-  refreshToken: string;
-};
-
-export type RefreshResp = {
-  accessToken: string;
-} & CommonResp;
-
-export type PublicJwk = {
-  kty: string;
-  e: string;
-  use: string;
-  kid: string;
-  alg: string;
-  n: string;
-};
+export type AuthorizeResp = {} & CommonResp;
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
@@ -66,11 +55,12 @@ function arrayToBase64Url(array: Uint8Array): string {
   return btoa(src).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export class MyOAuthSdk {
+export class MyOAuthOidc {
+  private discoveryPromise: Promise<OidcDiscovery> | null = null;
+
   constructor(
-    private oAuthEndpoint: string,
+    private issuer: string,
     private authorizeEndpoint: string,
-    private refreshEndpoint: string,
   ) {}
 
   public async genChallengeVerifier(len: number): Promise<ChallengeVerifier> {
@@ -87,42 +77,31 @@ export class MyOAuthSdk {
     return { codeChallenge: challenge, codeVerifier: verifier };
   }
 
-  public redirectLogin(req: LoginReq) {
+  public async redirectLogin(req: LoginReq) {
+    const issuer = this.issuer.replace(/\/+$/, "");
+    this.discoveryPromise ??= getJson<OidcDiscovery>(
+      `${issuer}/.well-known/openid-configuration`,
+    );
+    const discovery = await this.discoveryPromise;
     const params = new URLSearchParams({
-      clientId: req.clientId,
-      redirect: req.redirect,
-      codeChallenge: req.codeChallenge,
+      response_type: "code",
+      client_id: req.clientId,
+      redirect_uri: req.redirectUri,
+      scope: req.scope || "openid profile",
+      code_challenge: req.codeChallenge,
+      code_challenge_method: "S256",
+      state: req.state,
+      nonce: req.nonce,
     });
-    window.location.replace(`${this.oAuthEndpoint}/login?${params}`);
+    window.location.replace(`${discovery.authorization_endpoint}?${params}`);
   }
 
-  public authorize(codeVerifier: string): Promise<AuthorizeResp> {
-    const authorizationCode =
-      new URLSearchParams(window.location.search).get("authorizationCode") ??
-      "";
-    return postJson<AuthorizeResp>(this.authorizeEndpoint, {
-      codeVerifier,
-      authorizationCode,
-    });
-  }
-
-  public refresh(refreshToken: string): Promise<RefreshResp> {
-    return postJson<RefreshResp>(this.refreshEndpoint, { refreshToken });
-  }
-
-  public verify(accessToken: string): Promise<CommonResp> {
-    return postJson<CommonResp>(`${this.oAuthEndpoint}/api/auth/verify`, {
-      accessToken,
-    });
-  }
-
-  public getPublicKey(): Promise<PublicJwk> {
-    return getJson<PublicJwk>(`${this.oAuthEndpoint}/api/setup/public-key`);
+  public authorize(req: AuthorizeReq): Promise<AuthorizeResp> {
+    return postJson<AuthorizeResp>(this.authorizeEndpoint, req);
   }
 }
 
-export const oAuthSdk = new MyOAuthSdk(
-  import.meta.env.VITE_OAUTH_ENDPOINT as string,
+export const oAuthSdk = new MyOAuthOidc(
+  import.meta.env.VITE_OAUTH_ISSUER as string,
   "/api/authorize",
-  "/api/refresh",
 );
